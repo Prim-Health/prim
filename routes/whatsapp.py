@@ -10,8 +10,9 @@ from models.whatsapp import TwilioWhatsAppWebhook
 router = APIRouter()
 settings = get_settings()
 
-WELCOME_MESSAGE = "Hey {name}! Prim here. Great to hear from you. To get things started, can you message me your WhatsApp number and email?"
-PRIM_NUMBER = "+15551478999"
+WELCOME_MESSAGE = "Hey {name}! Prim here. Great to hear from you. To get things started, can you " \
+    "message me the best number for me to call you at and your email?"
+PRIM_NUMBER = "+16505407827"
 
 
 @router.post("/whatsapp-webhook")
