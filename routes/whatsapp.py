@@ -48,7 +48,10 @@ async def whatsapp_webhook(request: Request):
         user = await get_user_by_phone(webhook.From)
         if not user:
             logging.info("No user found, creating user for %s", webhook.From)
-            user = await create_user(webhook.From)
+            # Extract name from ProfileName, defaulting to None if not present
+            name = webhook.ProfileName if webhook.ProfileName else None
+            logging.info("Creating user with name: %s", name)
+            user = await create_user(webhook.From, name=name)
 
             try:
                 welcome_message = WELCOME_MESSAGE.format(

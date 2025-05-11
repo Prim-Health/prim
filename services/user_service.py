@@ -1,7 +1,9 @@
 from typing import Optional
+import logging
 from bson import ObjectId
 from models.base import User
 from db import users_collection
+from datetime import datetime
 
 
 def clean_phone_number(phone: str) -> str:
@@ -23,11 +25,30 @@ async def get_user_by_phone(phone: str) -> Optional[User]:
     return None
 
 
-async def create_user(phone: str) -> User:
+async def create_user(phone: str, name: Optional[str] = None) -> User:
     clean_phone = clean_phone_number(phone)
-    user = User(phone=clean_phone)
-    result = await users_collection.insert_one(user.model_dump(by_alias=True))
-    user.id = result.inserted_id
+
+    # Create user data dictionary explicitly
+    user_data = {
+        "phone": clean_phone,
+        "name": name,
+        "vapi_assistant_id": None,
+        "onboarded": False,
+        "created_at": datetime.utcnow()
+    }
+
+    logging.info("Creating user with data: %s", user_data)
+
+    # Insert the user data directly
+    result = await users_collection.insert_one(user_data)
+
+    # Create User instance from the inserted data
+    user = User(**user_data, id=result.inserted_id)
+
+    # Verify the inserted document
+    inserted_user = await users_collection.find_one({"_id": result.inserted_id})
+    logging.info("Inserted user document: %s", inserted_user)
+
     return user
 
 
