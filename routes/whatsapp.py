@@ -3,6 +3,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from services.user_service import get_user_by_phone, create_user
 from services.whatsapp_service import send_whatsapp_message
 from services.vapi_service import create_assistant, make_call
+from services.message_service import store_message, get_user_message_history, generate_response
 from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
 
@@ -32,18 +33,25 @@ async def whatsapp_webhook(request: Request):
         logging.info("Received WhatsApp message from %s: %s",
                      webhook.From, webhook.Body)
 
-        # Get or create user
+        # Get or create user if user does not exist
         user = await get_user_by_phone(webhook.From)
         if not user:
             logging.info("No user found, creating user for %s", webhook.From)
             user = await create_user(webhook.From)
 
             try:
-                await send_whatsapp_message(
-                    webhook.From,
-                    WELCOME_MESSAGE.format(name=webhook.ProfileName.split()[
-                                           0] if webhook.ProfileName else "there")
+                welcome_message = WELCOME_MESSAGE.format(
+                    name=webhook.ProfileName.split(
+                    )[0] if webhook.ProfileName else "there"
                 )
+                # Store the welcome message first
+                await store_message(
+                    user_id=user.id,
+                    text=welcome_message,
+                    source="whatsapp"
+                )
+                # Then send it
+                await send_whatsapp_message(webhook.From, welcome_message)
                 logging.info(
                     "Successfully sent welcome message to %s", webhook.From)
             except Exception as e:
@@ -51,9 +59,30 @@ async def whatsapp_webhook(request: Request):
 
             return {"status": "ok"}
 
-        # Send response
-        await send_whatsapp_message(webhook.From, "Thanks! I've got your info now. I'll give you a call now to get things started. No worries "
-                                    + f"if you can't pick up, you can give me a call back anytime at {PRIM_NUMBER}")
+        try:
+            # Store the incoming message
+            await store_message(
+                user_id=user.id,
+                text=webhook.Body,
+                source="whatsapp"
+            )
+            logging.info("Successfully stored message from %s", webhook.From)
+
+            # Get message history for user and generate response
+            message_history = await get_user_message_history(user.id)
+            response_text = await generate_response(message_history)
+
+            # Store and send the response
+            await store_message(
+                user_id=user.id,
+                text=response_text,
+                source="whatsapp"
+            )
+            await send_whatsapp_message(webhook.From, response_text)
+            logging.info("Successfully sent response to %s", webhook.From)
+
+        except (ValueError, ConnectionError) as e:
+            logging.error("Failed to process message: %s", str(e))
 
         return {"status": "ok"}
 

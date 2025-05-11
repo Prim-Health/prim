@@ -4,15 +4,28 @@ from models.base import User
 from db import users_collection
 
 
+def clean_phone_number(phone: str) -> str:
+    """
+    Clean phone number by removing 'whatsapp:' prefix if present.
+    Args:
+        phone: Phone number string that may include 'whatsapp:' prefix
+    Returns:
+        Cleaned phone number
+    """
+    return phone.replace("whatsapp:", "")
+
+
 async def get_user_by_phone(phone: str) -> Optional[User]:
-    user_data = await users_collection.find_one({"phone": phone})
+    clean_phone = clean_phone_number(phone)
+    user_data = await users_collection.find_one({"phone": clean_phone})
     if user_data:
         return User(**user_data)
     return None
 
 
 async def create_user(phone: str) -> User:
-    user = User(phone=phone)
+    clean_phone = clean_phone_number(phone)
+    user = User(phone=clean_phone)
     result = await users_collection.insert_one(user.model_dump(by_alias=True))
     user.id = result.inserted_id
     return user
