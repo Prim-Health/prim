@@ -43,8 +43,7 @@ async def send_whatsapp_message(to: str, message: str) -> str:
             response = await client.post(url, headers=headers, json=data)
             response.raise_for_status()
             return response.json()["messages"][0]["id"]
-        except httpx.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             logging.error("Failed to send WhatsApp message: %s", str(e))
-            if hasattr(e, 'response') and e.response is not None:
-                logging.error("Response content: %s", e.response.text)
+            logging.error("Response content: %s", e.response.text)
             raise

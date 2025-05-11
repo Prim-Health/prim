@@ -10,6 +10,9 @@ from models.whatsapp import WhatsAppWebhook
 router = APIRouter()
 settings = get_settings()
 
+WELCOME_MESSAGE = "Hey {name}! Prim here. Great to hear from you. To get things started, can you message me your WhatsApp number and email?"
+PRIM_NUMBER = "+15551478999"
+
 
 @router.get("/whatsapp-webhook")
 async def verify_webhook(
@@ -72,11 +75,18 @@ async def whatsapp_webhook(webhook: WhatsAppWebhook):
                         "No user found, creating user for %s", from_number)
                     user = await create_user(from_number)
 
+                    # Get user's name from WhatsApp contact info
+                    user_name = "there"  # Default name if not available
+                    for contact in value.get("contacts", []):
+                        if contact.get("wa_id") == from_number:
+                            user_name = contact.get(
+                                "profile", {}).get("name", "there")
+                            break
+
                     try:
-                        # Send direct text message instead of template
                         await send_whatsapp_message(
                             from_number,
-                            "Welcome! How can I help you today?"
+                            WELCOME_MESSAGE.format(name=user_name.split()[0])
                         )
                         logging.info(
                             "Successfully sent welcome message to %s", from_number)
@@ -98,7 +108,7 @@ async def whatsapp_webhook(webhook: WhatsAppWebhook):
                 # response = "I understand your message. How can I help you further?"
 
                 # # Send response
-                # # Template name for response message
-                # await send_whatsapp_message(from_number, "response_message")
+                await send_whatsapp_message(from_number, "Thanks! I've got your info now. I'll give you a call now to get things started. No worries "
+                                            + f"if you can't pick up, you can give me a call back anytime at {PRIM_NUMBER}")
 
     return {"status": "ok"}
