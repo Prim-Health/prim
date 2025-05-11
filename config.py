@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # WhatsApp Business API
-    whatsapp_verify_token: str
-    whatsapp_access_token: str
-    whatsapp_welcome_template: str = "welcome_message"  # Default template name
+    # Twilio
+    twilio_account_sid: str
+    twilio_auth_token: str
+    twilio_whatsapp_number: str
 
     # VAPI
     vapi_api_key: str
