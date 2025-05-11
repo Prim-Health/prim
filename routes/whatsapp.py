@@ -10,6 +10,7 @@ from models.whatsapp import WhatsAppWebhook
 router = APIRouter()
 settings = get_settings()
 
+
 @router.get("/whatsapp-webhook")
 async def verify_webhook(
     hub_mode: str = Query(..., alias="hub.mode"),
@@ -24,23 +25,26 @@ async def verify_webhook(
         return int(hub_challenge)
     raise HTTPException(status_code=403, detail="Invalid verification token")
 
+
 @router.post("/whatsapp-webhook")
 async def whatsapp_webhook(webhook: WhatsAppWebhook):
     """
     Handle incoming WhatsApp messages.
     """
     logging.info("Received WhatsApp webhook: %s", webhook)
-    
+
     if webhook.object != "whatsapp_business_account":
-        logging.info("Received WhatsApp webhook with object: %s", webhook.object)
+        logging.info("Received WhatsApp webhook with object: %s",
+                     webhook.object)
         return {"status": "ignored"}
 
     for entry in webhook.entry:
         for change in entry.get("changes", []):
             if change.get("field") != "messages":
-                logging.info("Did not get messages, received WhatsApp webhook with field: %s", change.get("field"))
+                logging.info(
+                    "Did not get messages, received WhatsApp webhook with field: %s", change.get("field"))
                 continue
-            
+
             value = change.get("value", {})
             for message in value.get("messages", []):
                 if message.get("type") != "text":
@@ -48,7 +52,7 @@ async def whatsapp_webhook(webhook: WhatsAppWebhook):
 
                 from_number = message.get("from")
                 message_body = message.get("text", {}).get("body")
-                
+
                 if not from_number or not message_body:
                     continue
 
@@ -58,32 +62,43 @@ async def whatsapp_webhook(webhook: WhatsAppWebhook):
                     continue
 
                 # Log incoming message
-                logging.info("Received WhatsApp message from %s: %s", from_number, message_body)
+                logging.info("Received WhatsApp message from %s: %s",
+                             from_number, message_body)
 
                 # Get or create user
                 user = await get_user_by_phone(from_number)
                 if not user:
-                    logging.info("No user found, creating user for %s", from_number)
+                    logging.info(
+                        "No user found, creating user for %s", from_number)
                     user = await create_user(from_number)
 
-                    # Send welcome message and initiate call
-                    await send_whatsapp_message(
-                        from_number,
-                        "welcome_message"  # Template name for welcome message
-                    )
+                    try:
+                        # Send direct text message instead of template
+                        await send_whatsapp_message(
+                            from_number,
+                            "Welcome! How can I help you today?"
+                        )
+                        logging.info(
+                            "Successfully sent welcome message to %s", from_number)
+                    except Exception as e:
+                        logging.error(
+                            "Failed to send welcome message: %s", str(e))
+                        # Continue processing even if welcome message fails
+
                     return {"status": "ok"}
 
                 # Store message
-                await store_message(user.id, message_body, "whatsapp")
+                # await store_message(user.id, message_body, "whatsapp")
 
                 # Get relevant context
-                relevant_messages = await get_relevant_messages(user.id, message_body)
-                context = "\n".join([msg.text for msg in relevant_messages])
+                # relevant_messages = await get_relevant_messages(user.id, message_body)
+                # context = "\n".join([msg.text for msg in relevant_messages])
 
-                # TODO: Generate response using context
-                response = "I understand your message. How can I help you further?"
+                # # TODO: Generate response using context
+                # response = "I understand your message. How can I help you further?"
 
-                # Send response
-                await send_whatsapp_message(from_number, "response_message")  # Template name for response message
+                # # Send response
+                # # Template name for response message
+                # await send_whatsapp_message(from_number, "response_message")
 
     return {"status": "ok"}

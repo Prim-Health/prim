@@ -1,11 +1,11 @@
 from pydantic_settings import BaseSettings
-from functools import lru_cache
 
 
 class Settings(BaseSettings):
     # WhatsApp Business API
     whatsapp_verify_token: str
     whatsapp_access_token: str
+    whatsapp_welcome_template: str = "welcome_message"  # Default template name
 
     # VAPI
     vapi_api_key: str
@@ -24,6 +24,5 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-@lru_cache()
 def get_settings() -> Settings:
     return Settings()
