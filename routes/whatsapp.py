@@ -22,7 +22,18 @@ async def whatsapp_webhook(request: Request):
     try:
         # Parse form data from Twilio webhook
         form_data = await request.form()
-        webhook = TwilioWhatsAppWebhook(**dict(form_data))
+        form_dict = dict(form_data)
+
+        # Log the incoming webhook data for debugging
+        logging.info("Received webhook data: %s", form_dict)
+
+        # Check if this is a Twilio webhook
+        if not all(key in form_dict for key in ['MessageSid', 'SmsStatus', 'Body', 'From', 'To']):
+            logging.error("Missing required Twilio webhook fields. Received fields: %s", list(
+                form_dict.keys()))
+            return {"status": "error", "message": "Invalid webhook format"}
+
+        webhook = TwilioWhatsAppWebhook(**form_dict)
 
         # Skip messages from our own number
         if webhook.From == f"whatsapp:{PRIM_NUMBER.replace('+', '')}":
