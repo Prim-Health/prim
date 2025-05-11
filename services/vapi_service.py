@@ -4,6 +4,7 @@ from config import get_settings
 settings = get_settings()
 VAPI_BASE_URL = "https://api.vapi.ai"
 
+
 async def create_assistant(name: str) -> str:
     """
     Create a new VAPI assistant.
@@ -22,6 +23,7 @@ async def create_assistant(name: str) -> str:
         )
         response.raise_for_status()
         return response.json()["id"]
+
 
 async def make_call(assistant_id: str, phone: str) -> str:
     """
@@ -43,6 +45,7 @@ async def make_call(assistant_id: str, phone: str) -> str:
         response.raise_for_status()
         return response.json()["id"]
 
+
 async def get_call_transcript(call_id: str) -> str:
     """
     Get the transcript for a completed call.
@@ -53,4 +56,4 @@ async def get_call_transcript(call_id: str) -> str:
             headers={"Authorization": f"Bearer {settings.vapi_api_key}"}
         )
         response.raise_for_status()
-        return response.json()["transcript"] 
+        return response.json()["transcript"]
