@@ -24,6 +24,8 @@ class User(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     phone: str
     name: Optional[str] = Field(default=None, exclude=False)
+    email: Optional[str] = Field(default=None, exclude=False)
+    call_phone: Optional[str] = Field(default=None, exclude=False)
     vapi_assistant_id: Optional[str] = None
     onboarded: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)

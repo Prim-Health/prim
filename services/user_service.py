@@ -1,7 +1,7 @@
 from typing import Optional
 import logging
 from bson import ObjectId
-from models.base import User
+from models.user import User
 from db import users_collection
 from datetime import datetime
 
@@ -61,5 +61,21 @@ async def update_user_vapi_assistant(user_id: ObjectId, vapi_assistant_id: str) 
                 "onboarded": True
             }
         }
+    )
+    return result.modified_count > 0
+
+
+async def update_user(user_id: ObjectId, update_data: dict) -> bool:
+    """
+    Update user fields.
+    Args:
+        user_id: The user's ID
+        update_data: Dictionary of fields to update
+    Returns:
+        True if update was successful
+    """
+    result = await users_collection.update_one(
+        {"_id": user_id},
+        {"$set": update_data}
     )
     return result.modified_count > 0

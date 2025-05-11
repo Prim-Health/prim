@@ -20,18 +20,6 @@ class PyObjectId(ObjectId):
         _property_schema.update(type="string")
 
 
-class User(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    phone: str
-    vapi_assistant_id: Optional[str] = None
-    onboarded: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        json_encoders = {ObjectId: str}
-        populate_by_name = True
-
-
 class Message(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId
