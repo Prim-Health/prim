@@ -27,10 +27,6 @@ class Settings(BaseSettings):
             return f"mongodb://{self.mongo_username}:{self.mongo_password}@{self.mongo_host}:{self.mongo_port}/{self.mongo_database}?authSource={self.mongo_auth_source}"
         return f"mongodb://{self.mongo_host}:{self.mongo_port}/{self.mongo_database}"
 
-    # Qdrant
-    qdrant_host: str = "localhost"
-    qdrant_port: int = 6333
-
     class Config:
         env_file = ".env"
 

@@ -1,21 +1,15 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
 from config import get_settings
 
 settings = get_settings()
 
 # MongoDB setup
-mongo_client = AsyncIOMotorClient(settings.mongo_uri)
-db = mongo_client.prim
+client = AsyncIOMotorClient(settings.mongo_uri)
+db = client[settings.mongo_database]
+
+# Collections
 users_collection = db.users
 messages_collection = db.messages
-
-# Qdrant setup
-qdrant_client = QdrantClient(
-    host=settings.qdrant_host,
-    port=settings.qdrant_port
-)
 
 
 async def ensure_indexes():
