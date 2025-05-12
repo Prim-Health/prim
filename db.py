@@ -23,18 +23,12 @@ try:
         if os.path.exists(cert_path):
             logger.info(f"Using system CA certificates from {cert_path}")
 
-            # Configure SSL context
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
-
             # Configure MongoDB client with system CA certificates
             client = AsyncIOMotorClient(
                 settings.mongo_uri,
                 tls=True,
-                tlsInsecure=False,
-                tlsCAFile=cert_path,
-                ssl_cert_reqs=ssl.CERT_REQUIRED
+                tlsAllowInvalidCertificates=False,
+                tlsCAFile=cert_path
             )
             logger.info(
                 "Successfully connected to MongoDB with system CA certificates")
@@ -63,19 +57,12 @@ try:
                     logger.info(
                         f"Created temporary CA certificate file at {temp_ca_path}")
 
-                    # Configure SSL context
-                    ssl_context = ssl.create_default_context()
-                    ssl_context.check_hostname = False
-                    ssl_context.verify_mode = ssl.CERT_REQUIRED
-                    ssl_context.load_verify_locations(cafile=temp_ca_path)
-
                     # Configure MongoDB client
                     client = AsyncIOMotorClient(
                         settings.mongo_uri,
                         tls=True,
-                        tlsInsecure=False,
-                        tlsCAFile=temp_ca_path,
-                        ssl_cert_reqs=ssl.CERT_REQUIRED
+                        tlsAllowInvalidCertificates=False,
+                        tlsCAFile=temp_ca_path
                     )
                     logger.info(
                         "Successfully connected to MongoDB with provided certificate")
