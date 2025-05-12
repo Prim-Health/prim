@@ -173,3 +173,4 @@ ENV/
 *.swo
 
 prim-venv/
+test-venv/
