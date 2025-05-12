@@ -73,8 +73,15 @@ VAPI_API_KEY=your_vapi_api_key
 # OpenAI
 OPENAI_API_KEY=your_openai_api_key
 
-# Database Settings (optional, defaults shown)
-MONGO_URI=mongodb://localhost:27017
+# MongoDB Settings
+MONGO_HOST=your_mongodb_host  # e.g., cluster0.xxxxx.mongodb.net for MongoDB Atlas
+MONGO_PORT=27017
+MONGO_USERNAME=your_mongodb_username
+MONGO_PASSWORD=your_mongodb_password
+MONGO_DATABASE=prim
+MONGO_AUTH_SOURCE=admin
+
+# Qdrant Settings
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
 ```

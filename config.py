@@ -14,7 +14,18 @@ class Settings(BaseSettings):
     openai_api_key: str
 
     # MongoDB
-    mongo_uri: str = "mongodb://localhost:27017"
+    mongo_host: str = "localhost"
+    mongo_port: int = 27017
+    mongo_username: str = ""
+    mongo_password: str = ""
+    mongo_database: str = "prim"
+    mongo_auth_source: str = "admin"  # Default auth source for MongoDB Atlas
+
+    @property
+    def mongo_uri(self) -> str:
+        if self.mongo_username and self.mongo_password:
+            return f"mongodb://{self.mongo_username}:{self.mongo_password}@{self.mongo_host}:{self.mongo_port}/{self.mongo_database}?authSource={self.mongo_auth_source}"
+        return f"mongodb://{self.mongo_host}:{self.mongo_port}/{self.mongo_database}"
 
     # Qdrant
     qdrant_host: str = "localhost"

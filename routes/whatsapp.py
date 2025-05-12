@@ -203,6 +203,8 @@ async def whatsapp_webhook(request: Request):
                     await send_whatsapp_message(webhook.From, response_text)
                     return {"status": "ok"}
 
+            # TODO: beta not ready we'll reach out
+
             # If we have both email and phone, proceed with normal response generation
             message_history = await get_user_message_history(user.id)
             response_text = await generate_response(message_history)
