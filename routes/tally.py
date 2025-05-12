@@ -124,11 +124,12 @@ async def tally_webhook(request: Request):
             if not settings.vapi_api_key:
                 raise ValueError("VAPI API key is not configured")
                 
-            assistant_name = f"Prim Assistant for {name or 'User'}"
-            logging.info("Creating VAPI assistant for user %s", user.id)
+            # Create a proper name for the assistant
+            assistant_name = f"Prim Assistant - {name or 'New User'}"
+            logging.info("Creating VAPI assistant for user %s with name: %s", user.id, assistant_name)
             assistant = await create_assistant(assistant_name)
-            logging.info("Initiating call to %s using assistant %s", phone, assistant.id)
-            await make_call(assistant.id, phone)
+            logging.info("Initiating call to %s using assistant %s", phone, assistant)
+            await make_call(assistant, phone)
         except Exception as e:
             logging.error("Failed to create VAPI assistant or make call: %s", str(e))
             # Continue with the webhook response even if VAPI fails

@@ -3,9 +3,15 @@ import logging
 from config import get_settings
 from typing import Optional, Dict, Any
 
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 settings = get_settings()
 VAPI_BASE_URL = "https://api.vapi.ai"
 
+VAPI_PROD_PHONE_ID = "83306635-cda5-41a3-81ff-f2878dd884ae"
+VAPI_DEV_PHONE_ID = "7761a6df-3b36-4af3-a278-f63d3833512c"
 
 async def make_call(
     to_phone: str,

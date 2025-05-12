@@ -4,7 +4,15 @@ from routes import whatsapp, vapi, tally
 from db import ensure_indexes
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,  # Set to DEBUG to see all logs
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 app = FastAPI(title="Prim API")
 
@@ -18,6 +26,7 @@ app.include_router(tally.router, prefix="/api/v1", tags=["tally"])
 async def startup_event():
     # Ensure database indexes are created
     await ensure_indexes()
+    logger.info("Application started and database indexes created")
 
 
 @app.get("/")

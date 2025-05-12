@@ -34,6 +34,9 @@ class Settings(BaseSettings):
             return f"mongodb://{self.mongo_username}:{self.mongo_password}@{self.mongo_host}:{self.mongo_port}/{self.mongo_database}?authSource={self.mongo_auth_source}"
         return f"mongodb://{self.mongo_host}:{self.mongo_port}/{self.mongo_database}"
 
+    # Application
+    base_url: str = "http://localhost:8000"  # Default to localhost for development
+
     class Config:
         env_file = ".env"
         env_prefix = ""  # No prefix for environment variables
