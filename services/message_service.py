@@ -1,7 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from openai import AsyncOpenAI
-from models.base import Message
+from models.message import Message
 from db import messages_collection, qdrant_client, create_qdrant_collection
 from config import get_settings
 from qdrant_client.http import models
