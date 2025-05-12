@@ -1,44 +1,62 @@
 'use client';
 
-import { useStore } from '@/lib/store';
+import React from 'react';
+import { useStore } from '../../lib/store';
+import { Timestamp } from 'firebase/firestore';
 import { AlertCircle } from 'lucide-react';
 
 export function RequiresAction() {
-  const { actions } = useStore();
+  const { actions, patients } = useStore();
+  
+  // Filter for failed actions
+  const failedActions = Object.values(actions).filter(action => action.status === 'failed');
 
-  // Filter active actions
-  const activeActions = Object.values(actions).filter(
-    (action) => action.status === 'active'
-  );
-
+  const formatDate = (timestamp: string | Timestamp): string => {
+    try {
+      let date: Date;
+      if (timestamp instanceof Timestamp) {
+        date = timestamp.toDate();
+      } else {
+        date = new Date(timestamp);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
+  };
+  
+  if (failedActions.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Requires Action</h2>
+        <p className="text-gray-500">No actions require attention at this time.</p>
+      </div>
+    );
+  }
+  
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold">Requires Action</h2>
-      {activeActions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No actions require attention</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {activeActions.map((action) => (
-            <div
-              key={action.id}
-              className="flex items-start space-x-3 rounded-lg border p-4"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium">{action.type}</h3>
-                <p className="mt-1 text-sm text-gray-600">{action.description}</p>
-                <div className="mt-2 flex items-center text-sm text-gray-500">
-                  <span>Created: {new Date(action.created_at).toLocaleDateString()}</span>
-                </div>
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Requires Action ({failedActions.length})</h2>
+      <div className="space-y-4">
+        {failedActions.map((action) => {
+          const patient = patients[action.patient_id];
+          return (
+            <div key={action.id} className="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                {action.description}
+              </h3>
+              <div className="text-sm text-gray-500">
+                {formatDate(action.created_at)} • {patient?.name || 'Unknown Patient'}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 } 

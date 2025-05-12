@@ -47,8 +47,8 @@ export function AnalyticsDashboard() {
                 <metric.icon className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{metric.name}</p>
-                <p className="text-2xl font-semibold text-gray-900">{metric.value}</p>
+                <p className="text-sm font-medium text-black">{metric.name}</p>
+                <p className="text-2xl font-semibold text-black">{metric.value}</p>
               </div>
             </div>
             <div className="mt-4">
@@ -68,7 +68,7 @@ export function AnalyticsDashboard() {
       </div>
 
       <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold">Quality Measures</h2>
+        <h2 className="mb-4 text-lg font-semibold text-black">Quality Measures</h2>
         <div className="text-center py-12">
           <p className="text-gray-500">
             Quality measures and detailed analytics coming soon...

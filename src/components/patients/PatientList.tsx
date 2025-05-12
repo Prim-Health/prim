@@ -4,39 +4,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowUpDown } from 'lucide-react';
 import { Patient } from '@/lib/types';
-
-// Mock data for demonstration
-const mockPatients: Record<string, Patient> = {
-  'patient1': {
-    name: 'John Smith',
-    conditions: ['Hypertension', 'Type 2 Diabetes'],
-    timeline: {},
-    care_plan_snapshots: {},
-    actions: {},
-  },
-  'patient2': {
-    name: 'Sarah Johnson',
-    conditions: ['Asthma', 'Anxiety'],
-    timeline: {},
-    care_plan_snapshots: {},
-    actions: {},
-  },
-  'patient3': {
-    name: 'Michael Brown',
-    conditions: ['Heart Disease', 'High Cholesterol'],
-    timeline: {},
-    care_plan_snapshots: {},
-    actions: {},
-  },
-};
+import { useStore } from '@/lib/store';
 
 export function PatientList() {
   const router = useRouter();
+  const { patients } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<'name' | 'risk'>('name');
+  const [sortField, setSortField] = useState<'name' | 'risk' | 'conditions' | 'hcpcs'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const filteredPatients = Object.entries(mockPatients).filter(([_, patient]) =>
+  const filteredPatients = Object.entries(patients).filter(([_, patient]) =>
     patient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -45,15 +22,23 @@ export function PatientList() {
       return sortDirection === 'asc'
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name);
-    } else {
-      // Mock risk calculation based on number of conditions
+    } else if (sortField === 'risk') {
       const riskA = a.conditions.length;
       const riskB = b.conditions.length;
       return sortDirection === 'asc' ? riskA - riskB : riskB - riskA;
+    } else if (sortField === 'conditions') {
+      const conditionsA = a.conditions.length;
+      const conditionsB = b.conditions.length;
+      return sortDirection === 'asc' ? conditionsA - conditionsB : conditionsB - conditionsA;
+    } else if (sortField === 'hcpcs') {
+      return sortDirection === 'asc'
+        ? a.hcpcs_code.localeCompare(b.hcpcs_code)
+        : b.hcpcs_code.localeCompare(a.hcpcs_code);
     }
+    return 0;
   });
 
-  const handleSort = (field: 'name' | 'risk') => {
+  const handleSort = (field: 'name' | 'risk' | 'conditions' | 'hcpcs') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -66,7 +51,7 @@ export function PatientList() {
     <div className="rounded-lg border bg-white p-6">
       <div className="mb-4 flex items-center space-x-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
           <input
             type="text"
             placeholder="Search patients..."
@@ -80,11 +65,11 @@ export function PatientList() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b">
+            <tr>
               <th className="px-4 py-3 text-left">
                 <button
                   onClick={() => handleSort('name')}
-                  className="flex items-center space-x-1 font-medium text-gray-500"
+                  className="flex items-center space-x-1 font-medium text-gray-500 cursor-pointer"
                 >
                   <span>Name</span>
                   <ArrowUpDown className="h-4 w-4" />
@@ -93,13 +78,30 @@ export function PatientList() {
               <th className="px-4 py-3 text-left">
                 <button
                   onClick={() => handleSort('risk')}
-                  className="flex items-center space-x-1 font-medium text-gray-500"
+                  className="flex items-center space-x-1 font-medium text-gray-500 cursor-pointer"
                 >
                   <span>Compliance Risk</span>
                   <ArrowUpDown className="h-4 w-4" />
                 </button>
               </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Conditions</th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort('conditions')}
+                  className="flex items-center space-x-1 font-medium text-gray-500 cursor-pointer"
+                >
+                  <span>Conditions</span>
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort('hcpcs')}
+                  className="flex items-center space-x-1 font-medium text-gray-500 cursor-pointer"
+                >
+                  <span>HCPCS Code</span>
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
+              </th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Flags/Alerts</th>
             </tr>
           </thead>
@@ -111,7 +113,7 @@ export function PatientList() {
                 onClick={() => router.push(`/patients/${id}`)}
               >
                 <td className="px-4 py-3">
-                  <div className="font-medium">{patient.name}</div>
+                  <div className="font-medium text-black">{patient.name}</div>
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -135,6 +137,9 @@ export function PatientList() {
                       </span>
                     ))}
                   </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-black">{patient.hcpcs_code}</span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm text-gray-500">No active flags</span>

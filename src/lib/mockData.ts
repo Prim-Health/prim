@@ -1,24 +1,78 @@
 import { Patient, CarePlanSnapshot, Action, TimelineEvent } from './types';
 
+// Helper function to create a date with random time within a range
+function createDateWithRandomTime(daysOffset: number, startHour: number, endHour: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  
+  // Generate random hour and minute within the range
+  const hour = Math.floor(Math.random() * (endHour - startHour)) + startHour;
+  const minute = Math.floor(Math.random() * 60);
+  const second = Math.floor(Math.random() * 60);
+  
+  date.setHours(hour, minute, second, 0);
+  return date;
+}
+
+// Helper function to create a date with specific time range based on event type
+function createDateForEventType(daysOffset: number, type: string): Date {
+  switch (type) {
+    case 'appointment':
+      // Appointments between 8 AM and 4 PM
+      return createDateWithRandomTime(daysOffset, 8, 16);
+    case 'lab':
+      // Lab work between 6 AM and 10 AM
+      return createDateWithRandomTime(daysOffset, 6, 10);
+    case 'call':
+      // Calls between 9 AM and 4 PM
+      return createDateWithRandomTime(daysOffset, 9, 16);
+    case 'hospitalization':
+      // Hospital visits can happen any time
+      return createDateWithRandomTime(daysOffset, 0, 24);
+    case 'diagnosis':
+      // Diagnoses typically during regular hours
+      return createDateWithRandomTime(daysOffset, 8, 17);
+    default:
+      // Default to regular business hours
+      return createDateWithRandomTime(daysOffset, 9, 17);
+  }
+}
+
 export const mockPatients: Record<string, Patient> = {
   'patient1': {
     name: 'John Smith',
-    conditions: ['Hypertension', 'Type 2 Diabetes', 'High Cholesterol'],
+    conditions: ['Type 2 Diabetes', 'Hypertension', 'Chronic Kidney Disease', 'Hyperlipidemia'],
+    hcpcs_code: 'G0556',
     timeline: {
       'event1': {
         type: 'appointment',
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Regular checkup with Dr. Johnson',
+        timestamp: createDateForEventType(14, 'appointment').toISOString(),
+        description: 'Scheduled nephrology follow-up',
       },
       'event2': {
-        type: 'lab',
-        timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Blood work results received - Cholesterol levels elevated',
+        type: 'call',
+        timestamp: createDateForEventType(7, 'call').toISOString(),
+        description: 'Monthly diabetes check-in call',
       },
       'event3': {
+        type: 'lab',
+        timestamp: createDateForEventType(-7, 'lab').toISOString(),
+        description: 'Blood work results - HbA1c: 7.6%, eGFR: 48 mL/min/1.73m²',
+      },
+      'event4': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-30, 'appointment').toISOString(),
+        description: 'Primary care check-up - BP: 145/90, adjusted medication',
+      },
+      'event5': {
         type: 'diagnosis',
-        timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Diagnosed with Type 2 Diabetes',
+        timestamp: createDateForEventType(-90, 'diagnosis').toISOString(),
+        description: 'Diagnosed with Chronic Kidney Disease, Stage 3',
+      },
+      'event6': {
+        type: 'hospitalization',
+        timestamp: createDateForEventType(-120, 'hospitalization').toISOString(),
+        description: 'Emergency room visit for hypertensive crisis',
       },
     },
     care_plan_snapshots: {
@@ -27,7 +81,7 @@ export const mockPatients: Record<string, Patient> = {
         text_block: `
 Patient Profile
         ---------------
-        Name: Linda Martinez
+        Name: John Smith
         DOB: 1948-02-13
         Medicare ID: 3AG4-TY84-83Z
         Primary Provider: Dr. Amanda Reyes, MD
@@ -135,16 +189,32 @@ Patient Profile
   'patient2': {
     name: 'Sarah Johnson',
     conditions: ['Asthma', 'Anxiety'],
+    hcpcs_code: 'G0557',
     timeline: {
       'event1': {
-        type: 'hospitalization',
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Emergency room visit for severe asthma attack',
+        type: 'appointment',
+        timestamp: createDateForEventType(21, 'appointment').toISOString(),
+        description: 'Scheduled pulmonology follow-up',
       },
       'event2': {
+        type: 'call',
+        timestamp: createDateForEventType(14, 'call').toISOString(),
+        description: 'Bi-weekly asthma check-in call',
+      },
+      'event3': {
         type: 'lab',
-        timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Pulmonary function test results',
+        timestamp: createDateForEventType(-5, 'lab').toISOString(),
+        description: 'Pulmonary function test - FEV1: 85% predicted',
+      },
+      'event4': {
+        type: 'hospitalization',
+        timestamp: createDateForEventType(-15, 'hospitalization').toISOString(),
+        description: 'Emergency room visit for severe asthma attack',
+      },
+      'event5': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-45, 'appointment').toISOString(),
+        description: 'Psychiatry consultation - anxiety management',
       },
     },
     care_plan_snapshots: {
@@ -185,16 +255,37 @@ Patient Profile
   'patient3': {
     name: 'Michael Brown',
     conditions: ['Heart Disease', 'High Cholesterol'],
+    hcpcs_code: 'G0558',
     timeline: {
       'event1': {
         type: 'appointment',
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Cardiology follow-up appointment',
+        timestamp: createDateForEventType(30, 'appointment').toISOString(),
+        description: 'Scheduled cardiology follow-up',
       },
       'event2': {
+        type: 'call',
+        timestamp: createDateForEventType(14, 'call').toISOString(),
+        description: 'Bi-weekly cardiac check-in call',
+      },
+      'event3': {
         type: 'lab',
-        timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Cardiac stress test results',
+        timestamp: createDateForEventType(-3, 'lab').toISOString(),
+        description: 'Cardiac stress test results - normal exercise tolerance',
+      },
+      'event4': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-30, 'appointment').toISOString(),
+        description: 'Cardiology follow-up - stable condition',
+      },
+      'event5': {
+        type: 'hospitalization',
+        timestamp: createDateForEventType(-90, 'hospitalization').toISOString(),
+        description: 'Hospital admission for chest pain evaluation',
+      },
+      'event6': {
+        type: 'diagnosis',
+        timestamp: createDateForEventType(-120, 'diagnosis').toISOString(),
+        description: 'Diagnosed with Coronary Artery Disease',
       },
     },
     care_plan_snapshots: {
@@ -230,21 +321,55 @@ Patient Profile
           },
         ],
       },
+      'action2': {
+        id: 'care_plan_call_patient',
+        patient_id: 'patient3',
+        type: 'care_plan_call_patient',
+        description: 'Follow-up call regarding medication changes',
+        status: 'failed',
+        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString(),
+        activity_log: [
+          {
+            description: 'Call attempt initiated',
+            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            action: 'call_attempted',
+            details: 'Attempted to reach patient'
+          },
+          {
+            description: 'Call failed - no answer',
+            timestamp: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString(),
+            action: 'call_failed',
+            details: 'Patient did not answer after multiple attempts'
+          },
+        ],
+      },
     },
   },
   'patient4': {
     name: 'Emily Davis',
     conditions: ['Depression', 'Anxiety'],
+    hcpcs_code: 'G0556',
     timeline: {
       'event1': {
         type: 'appointment',
-        timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Psychiatry consultation',
+        timestamp: createDateForEventType(14, 'appointment').toISOString(),
+        description: 'Scheduled psychiatry follow-up',
       },
       'event2': {
         type: 'call',
-        timestamp: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Follow-up call regarding medication side effects',
+        timestamp: createDateForEventType(7, 'call').toISOString(),
+        description: 'Weekly mental health check-in call',
+      },
+      'event3': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-7, 'appointment').toISOString(),
+        description: 'Therapy session - discussing coping strategies',
+      },
+      'event4': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-30, 'appointment').toISOString(),
+        description: 'Psychiatry consultation - medication adjustment',
       },
     },
     care_plan_snapshots: {
@@ -285,16 +410,32 @@ Patient Profile
   'patient5': {
     name: 'Robert Wilson',
     conditions: ['COPD', 'Hypertension'],
+    hcpcs_code: 'G0557',
     timeline: {
       'event1': {
-        type: 'hospitalization',
-        timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'COPD exacerbation requiring hospitalization',
+        type: 'appointment',
+        timestamp: createDateForEventType(28, 'appointment').toISOString(),
+        description: 'Scheduled pulmonary follow-up',
       },
       'event2': {
+        type: 'call',
+        timestamp: createDateForEventType(14, 'call').toISOString(),
+        description: 'Bi-weekly COPD check-in call',
+      },
+      'event3': {
         type: 'lab',
-        timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Blood gas analysis results',
+        timestamp: createDateForEventType(-5, 'lab').toISOString(),
+        description: 'Blood gas analysis - PaO2: 85 mmHg',
+      },
+      'event4': {
+        type: 'hospitalization',
+        timestamp: createDateForEventType(-20, 'hospitalization').toISOString(),
+        description: 'COPD exacerbation requiring hospitalization',
+      },
+      'event5': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-60, 'appointment').toISOString(),
+        description: 'Pulmonary rehabilitation assessment',
       },
     },
     care_plan_snapshots: {
@@ -335,16 +476,32 @@ Patient Profile
   'patient6': {
     name: 'Lisa Anderson',
     conditions: ['Rheumatoid Arthritis', 'Osteoporosis'],
+    hcpcs_code: 'G0558',
     timeline: {
       'event1': {
         type: 'appointment',
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Rheumatology follow-up',
+        timestamp: createDateForEventType(21, 'appointment').toISOString(),
+        description: 'Scheduled rheumatology follow-up',
       },
       'event2': {
+        type: 'call',
+        timestamp: createDateForEventType(14, 'call').toISOString(),
+        description: 'Bi-weekly pain management check-in call',
+      },
+      'event3': {
         type: 'lab',
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Bone density scan results',
+        timestamp: createDateForEventType(-7, 'lab').toISOString(),
+        description: 'Bone density scan - T-score: -2.3',
+      },
+      'event4': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-30, 'appointment').toISOString(),
+        description: 'Physical therapy evaluation',
+      },
+      'event5': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-90, 'appointment').toISOString(),
+        description: 'Rheumatology consultation - new diagnosis',
       },
     },
     care_plan_snapshots: {
@@ -380,21 +537,60 @@ Patient Profile
           },
         ],
       },
+      'action2': {
+        id: 'ehr_request_medication_pcp',
+        patient_id: 'patient6',
+        type: 'ehr_request_medication_pcp',
+        description: 'Request pain medication adjustment',
+        status: 'failed',
+        created_at: new Date(Date.now() - 0.75 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 0.25 * 24 * 60 * 60 * 1000).toISOString(),
+        activity_log: [
+          {
+            description: 'Medication request initiated',
+            timestamp: new Date(Date.now() - 0.75 * 24 * 60 * 60 * 1000).toISOString(),
+            action: 'request_started',
+            details: 'Started medication adjustment request'
+          },
+          {
+            description: 'Request failed - PCP unavailable',
+            timestamp: new Date(Date.now() - 0.25 * 24 * 60 * 60 * 1000).toISOString(),
+            action: 'request_failed',
+            details: 'PCP is out of office until next week'
+          },
+        ],
+      },
     },
   },
   'patient7': {
     name: 'James Taylor',
     conditions: ['Type 1 Diabetes', 'Hypertension'],
+    hcpcs_code: 'G0557',
     timeline: {
       'event1': {
         type: 'appointment',
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'Endocrinology follow-up',
+        timestamp: createDateForEventType(28, 'appointment').toISOString(),
+        description: 'Scheduled endocrinology follow-up',
       },
       'event2': {
+        type: 'call',
+        timestamp: createDateForEventType(14, 'call').toISOString(),
+        description: 'Bi-weekly diabetes check-in call',
+      },
+      'event3': {
         type: 'lab',
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        description: 'HbA1c test results',
+        timestamp: createDateForEventType(-5, 'lab').toISOString(),
+        description: 'HbA1c test results - 7.2%',
+      },
+      'event4': {
+        type: 'appointment',
+        timestamp: createDateForEventType(-30, 'appointment').toISOString(),
+        description: 'Endocrinology follow-up - insulin pump adjustment',
+      },
+      'event5': {
+        type: 'hospitalization',
+        timestamp: createDateForEventType(-60, 'hospitalization').toISOString(),
+        description: 'Emergency room visit for severe hypoglycemia',
       },
     },
     care_plan_snapshots: {
@@ -450,26 +646,33 @@ export async function populateMockData(sessionId: string) {
   // Populate each patient
   for (const [patientId, patient] of Object.entries(mockPatients)) {
     const patientRef = doc(patientsRef, patientId);
+    
+    // Create actions subcollection
+    const actionsRef = collection(patientRef, 'actions');
+    
+    // Add each action to the actions subcollection
+    for (const [actionId, action] of Object.entries(patient.actions)) {
+      await setDoc(doc(actionsRef, actionId), {
+        ...action,
+        created_at: Timestamp.fromDate(new Date(action.created_at)),
+        updated_at: Timestamp.fromDate(new Date(action.updated_at)),
+        activity_log: action.activity_log.map(log => ({
+          ...log,
+          timestamp: Timestamp.fromDate(new Date(log.timestamp)),
+        })),
+      });
+    }
+
+    // Add patient data without actions (since they're in the subcollection)
     await setDoc(patientRef, {
       name: patient.name,
       conditions: patient.conditions,
+      hcpcs_code: patient.hcpcs_code,
       care_plan_snapshots: Object.entries(patient.care_plan_snapshots).reduce((acc, [id, snapshot]) => ({
         ...acc,
         [id]: {
           ...snapshot,
           created_at: Timestamp.fromDate(new Date(snapshot.created_at)),
-        }
-      }), {}),
-      actions: Object.entries(patient.actions).reduce((acc, [id, action]) => ({
-        ...acc,
-        [id]: {
-          ...action,
-          created_at: Timestamp.fromDate(new Date(action.created_at)),
-          updated_at: Timestamp.fromDate(new Date(action.updated_at)),
-          activity_log: action.activity_log.map(log => ({
-            ...log,
-            timestamp: Timestamp.fromDate(new Date(log.timestamp)),
-          })),
         }
       }), {}),
     });

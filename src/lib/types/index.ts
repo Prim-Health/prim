@@ -52,6 +52,7 @@ export interface Patient {
   timeline: Record<string, TimelineEvent>;
   care_plan_snapshots: Record<string, CarePlanSnapshot>;
   actions: Record<string, Action>;
+  hcpcs_code: 'G0556' | 'G0557' | 'G0558';
 }
 
 export interface UserSession {

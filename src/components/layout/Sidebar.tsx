@@ -16,7 +16,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-white">
       <div className="flex h-16 items-center border-b px-4">
-        <h1 className="text-xl font-semibold">Medical Assistant</h1>
+        <h1 className="text-xl font-semibold text-black">Medical Assistant</h1>
       </div>
       <nav className="flex-1 space-y-1 px-2 py-4">
         {navigation.map((item) => {
@@ -25,10 +25,10 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
+              className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium cursor-pointer ${
                 isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-gray-100 text-black'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-black'
               }`}
             >
               <item.icon

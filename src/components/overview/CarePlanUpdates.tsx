@@ -62,13 +62,13 @@ export function CarePlanUpdates() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4 text-black">Care Plan Updates</h2>
+      <h2 className="text-xl font-semibold mb-4 text-black">Care Plan Updates ({carePlansNeedingRevision.length})</h2>
       <div className="space-y-4">
         {carePlansNeedingRevision.map((plan: CarePlan) => (
           <button
             key={`${plan.patientId}-${plan.snapshotId}`}
             onClick={() => handlePlanClick(plan)}
-            className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           >
             <div className="flex justify-between items-center">
               <div>

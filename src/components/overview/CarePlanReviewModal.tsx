@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
@@ -116,16 +115,6 @@ export function CarePlanReviewModal({
         <div className="flex gap-4 h-full">
           {/* Left side - Care Plan Preview */}
           <div className="flex-1 overflow-y-auto max-h-[calc(80vh-12rem)] relative">
-            <div className="sticky bottom-2 right-2 z-10 flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetChanges}
-                className="opacity-70 hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm hover:text-black"
-              >
-                Reset Changes
-              </Button>
-            </div>
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <pre ref={previewRef} className="whitespace-pre-wrap font-mono text-sm text-black">
                 {previewText.split('\n').map((line, index) => (
@@ -143,7 +132,7 @@ export function CarePlanReviewModal({
           {/* Right side - Flags and Suggestions */}
           <div className="w-80 space-y-4">
             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h3 className="font-semibold text-yellow-800 mb-2">Flags</h3>
+              <h3 className="font-semibold text-black mb-2">Flags</h3>
               <ul className="space-y-2">
                 {snapshot.flags.map((flag: string) => (
                   <li key={flag} className="text-sm text-yellow-700">
@@ -154,14 +143,14 @@ export function CarePlanReviewModal({
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-blue-800 mb-2">Suggestions</h3>
+              <h3 className="font-semibold text-black mb-2">Suggestions</h3>
               <ul className="space-y-2">
                 {snapshot.suggestions.map((suggestion: string) => (
                   <li key={suggestion} className="text-sm">
                     <div className="flex items-start gap-2">
                       <Button
                         variant="ghost"
-                        className={`flex-1 justify-start text-left whitespace-normal text-wrap ${
+                        className={`flex-1 justify-start text-left whitespace-normal text-wrap cursor-pointer ${
                           acceptedSuggestions.includes(suggestion)
                             ? 'text-green-600'
                             : 'text-blue-700'
@@ -177,7 +166,7 @@ export function CarePlanReviewModal({
                           variant="outline"
                           size="sm"
                           onClick={() => handleAcceptSuggestion(suggestion)}
-                          className="text-xs px-2 py-1 h-7 min-w-[60px] shrink-0"
+                          className="text-xs px-2 py-1 h-7 min-w-[60px] shrink-0 cursor-pointer"
                         >
                           Apply
                         </Button>
@@ -191,10 +180,17 @@ export function CarePlanReviewModal({
         </div>
 
         {/* Action Bar */}
-        <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+        <div className="flex justify-end gap-4 mt-4 pt-4 border-t border-gray-200">
+          <Button
+            variant="outline"
+            onClick={resetChanges}
+            className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            Reset Changes
+          </Button>
           <Button 
             onClick={handleAuthorize}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 cursor-pointer"
           >
             Authorize Changes
           </Button>

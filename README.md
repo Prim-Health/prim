@@ -69,6 +69,27 @@ The application uses Firestore with the following collections:
     - `care_plan_snapshots`: Care plan versions
     - `actions`: Agent actions
 
+## Mock Data
+
+- On user login, create a new **session document** in Firestore.
+- Under that session, create a **`patients` subcollection** with **7 mock patients**:
+    - Vary names, conditions, compliance risk, and Medicare codes.
+- For each patient:
+    - Add a **`timeline` subcollection** with a unique timeline of events (as documents).
+    - Add a **`care_plan_snapshots` subcollection** with **2–7 versions** of past care plans.
+    - Add an **`actions` subcollection** with **at least 8 actions** per patient:
+        - All actions should have **many `activity_logs`** documenting what happened.
+        - All actions should be in state `successful`, **except 4 total** (across all patients) marked `failed`.
+- For **only one patient**:
+    - Mark their most recent care plan as **requiring review**.
+    - Add **2–5 flags** (reasons for review).
+    - Add **3–5 suggestions**:
+        - Suggestions appear in the care plan review modal.
+        - Each can be accepted/rejected, and updates the care plan accordingly.
+        - Flags and suggestions appear on the **top-right of the modal**, with the care plan in the main view.
+- All data should be **hardcoded** and automatically **loaded/populated on login**.
+
+
 ## License
 
 MIT

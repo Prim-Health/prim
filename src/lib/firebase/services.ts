@@ -134,7 +134,8 @@ export function subscribeToActions(
   return onSnapshot(actionsRef, (snapshot) => {
     const actions: Record<string, Action> = {};
     snapshot.forEach((doc) => {
-      actions[doc.id] = doc.data() as Action;
+      const action = doc.data() as Action;
+      actions[action.id] = action;
     });
     callback(actions);
   });
@@ -152,22 +153,28 @@ export async function getAnalytics(sessionId: string) {
     mipsScore: 0,
   };
   
-  snapshot.forEach((doc) => {
-    const patient = doc.data() as Patient;
+  for (const patientDoc of snapshot.docs) {
+    const patient = patientDoc.data() as Patient;
+    
     // Count active care plans
-    Object.values(patient.care_plan_snapshots).forEach((snapshot) => {
+    Object.values(patient.care_plan_snapshots || {}).forEach((snapshot) => {
       if (!snapshot.requiresRevision) {
         analytics.activeCarePlans++;
       }
     });
     
+    // Get actions from subcollection
+    const actionsRef = collection(db, 'user_sessions', sessionId, 'patients', patientDoc.id, 'actions');
+    const actionsSnapshot = await getDocs(actionsRef);
+    
     // Count pending actions
-    Object.values(patient.actions).forEach((action) => {
+    actionsSnapshot.forEach((actionDoc) => {
+      const action = actionDoc.data() as Action;
       if (action.status === 'active') {
         analytics.pendingActions++;
       }
     });
-  });
+  }
   
   // Mock MIPS score calculation
   analytics.mipsScore = Math.floor(
