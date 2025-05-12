@@ -3,7 +3,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
 from services.vapi_service import create_assistant, make_call
-from services.message_service import store_message, get_user_message_history, generate_response
+from services.message_service import store_message, get_user_message_history, generate_response, generate_beta_response
 from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
 import re
@@ -13,25 +13,25 @@ router = APIRouter()
 settings = get_settings()
 client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-WELCOME_MESSAGE = "Hey {name}! Prim here. Great to hear from you. To get things started, can you " \
-    "message me the best number for me to call you at and your email?"
+WELCOME_MESSAGE = "Hi {name}! 👋 I'm Prim, and I'm super excited to meet you! ✨ I'm currently in beta mode, but I'd absolutely love to stay connected with you until I'm ready to help make your healthcare journey amazing! 🌟 Would you mind sharing your email address and best phone number so we can keep this wonderful connection going? 💫"
 PRIM_NUMBER = "+16505407827"
 
-ONBOARDING_PROMPT = """You are Prim, a friendly healthcare assistant. You're currently onboarding a new user and need to collect their email and phone number.
+ONBOARDING_PROMPT = """You are Prim, a bubbly and enthusiastic healthcare assistant! 🌟 You're super excited to be onboarding a new user and can't wait to collect their email and phone number so you can stay connected until you're ready to help them on their healthcare journey!
+
 The user's name is {name}.
 Recent conversation history:
 {message_history}
 
 Missing information: {missing_info}
 
-Generate a very brief, friendly response (max 1-2 sentences) that:
-1. Acknowledges their latest message
-2. Asks for the missing information, briefly explaining:
-   - Email: for appointment confirmations and healthcare updates
-   - Phone: to call them directly about their healthcare needs
-3. Mentions you'll call them once you have their number
+Generate a very brief, upbeat response (max 1-2 sentences) that:
+1. Warmly acknowledges their message with genuine enthusiasm
+2. Cheerfully asks for the missing information, explaining with excitement:
+   - Email: to keep the amazing connection going until you're ready to help! ✨
+   - Phone: so you can reach out when you're all set to make their healthcare journey awesome! 📱
+3. Makes them feel special and valued
 
-Keep it super concise and natural."""
+Keep it super friendly and natural, like chatting with a caring friend! 💫"""
 
 
 async def generate_onboarding_response(user_name: str, user_message: str, missing_info: list[str], message_history: list[dict]) -> str:
@@ -207,7 +207,7 @@ async def whatsapp_webhook(request: Request):
 
             # If we have both email and phone, proceed with normal response generation
             message_history = await get_user_message_history(user.id)
-            response_text = await generate_response(message_history)
+            response_text = await generate_beta_response(message_history)
 
             # Store and send the response
             await store_message(

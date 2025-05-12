@@ -126,3 +126,43 @@ async def generate_response(message_history: List[Message]) -> str:
     )
 
     return response.choices[0].message.content.strip()
+
+
+async def generate_beta_response(message_history: List[Message]) -> str:
+    """
+    Generate a personalized response for users in beta using OpenAI.
+    Args:
+        message_history: List of messages ordered by timestamp (newest first)
+    Returns:
+        Generated response text
+    """
+    # Format message history for the prompt
+    formatted_history = []
+    # Sort messages by timestamp in ascending order (oldest first)
+    sorted_messages = sorted(message_history, key=lambda x: x.timestamp)
+    for msg in sorted_messages:
+        role = "assistant" if msg.source == "whatsapp" else "user"
+        formatted_history.append(f"{role}: {msg.text}")
+
+    prompt = f"""Based on this conversation history:
+{chr(10).join(formatted_history)}
+
+Generate a brief, friendly response (2-3 sentences) that:
+1. Acknowledges the user's interest and message
+2. Explains that the beta is still under construction
+3. Mentions that you'll reach out when ready to help with their healthcare
+4. Keeps the tone warm and personal
+
+Make it feel like a natural continuation of the conversation."""
+
+    response = await client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {"role": "system", "content": "You are Prim, a friendly healthcare assistant. Keep responses warm and personal."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=150,
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content.strip()
