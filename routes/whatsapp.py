@@ -11,6 +11,7 @@ import phonenumbers
 from email_validator import validate_email, EmailNotValidError
 from services.vapi_service import make_call
 import httpx
+from routes.utils import is_valid_email, is_valid_phone
 
 router = APIRouter()
 settings = get_settings()
@@ -64,51 +65,6 @@ async def generate_onboarding_response(user_name: str, user_message: str, missin
     )
 
     return response.choices[0].message.content.strip()
-
-
-def is_valid_email(email: str) -> bool:
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email))
-
-
-def extract_phone_number(text: str) -> str | None:
-    """
-    Extract a valid phone number from text using PhoneNumberMatcher.
-    Returns the number in E.164 format if found, None otherwise.
-    """
-    try:
-        matches = phonenumbers.PhoneNumberMatcher(text, "US")
-        for match in matches:
-            number = match.raw_string
-            parsed_number = phonenumbers.parse(number, "US")
-            if phonenumbers.is_valid_number(parsed_number):
-                return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-        return None
-    except phonenumbers.NumberParseException as e:
-        logging.error("Error parsing phone number: %s", e)
-        return None
-
-
-def extract_email(text: str) -> str | None:
-    try:
-        # Use email-validator's built-in email finding
-        validation = validate_email(text, check_deliverability=False)
-        return validation.normalized
-    except EmailNotValidError:
-        # If direct validation fails, try finding email in text
-        try:
-            # Split text by common delimiters and try each part
-            parts = re.split(r'[\s,;]+', text)
-            for part in parts:
-                try:
-                    validation = validate_email(
-                        part, check_deliverability=False)
-                    return validation.normalized
-                except EmailNotValidError:
-                    continue
-        except Exception as e:
-            logging.error(f"Error extracting email: {e}")
-        return None
 
 
 @router.post("/whatsapp-webhook")

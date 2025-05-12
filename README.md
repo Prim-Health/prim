@@ -48,6 +48,19 @@ A FastAPI service that serves as both the webhook handler and execution engine f
   - Sends welcome message for new users
   - Generates and sends responses via WhatsApp
 
+### Tally Integration
+
+- **POST** `/tally-webhook`
+  - Handles incoming Tally form submissions
+  - Required fields:
+    - Email
+    - Phone number
+    - Name (optional)
+  - Creates new users if they don't exist
+  - Updates existing users' information
+  - Initiates VAPI onboarding call
+  - Form ID: `mDYYWq`
+
 ### VAPI Integration
 
 - **POST** `/vapi-webhook`
