@@ -20,25 +20,43 @@ try:
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_ca:
             # Try to decode if the certificate is base64 encoded
             try:
+                # First try to decode as base64
                 cert_content = base64.b64decode(
                     settings.ca_cert).decode('utf-8')
                 logger.info("Successfully decoded base64 CA certificate")
-            except:
+            except Exception as decode_error:
+                logger.info(
+                    f"Base64 decode failed: {decode_error}, trying raw content")
+                # If base64 decode fails, try using raw content
                 cert_content = settings.ca_cert
                 logger.info("Using raw CA certificate content")
 
+            # Write the certificate content
             temp_ca.write(cert_content)
             temp_ca_path = temp_ca.name
             logger.info(
                 f"Created temporary CA certificate file at {temp_ca_path}")
+
+            # Verify the certificate file exists and has content
+            if not os.path.exists(temp_ca_path):
+                raise Exception("Temporary certificate file was not created")
+
+            if os.path.getsize(temp_ca_path) == 0:
+                raise Exception("Certificate file is empty")
 
         try:
             # Configure SSL context with the CA certificate
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_REQUIRED
-            ssl_context.load_verify_locations(cafile=temp_ca_path)
-            logger.info("Successfully configured SSL context")
+
+            # Load the certificate with explicit error handling
+            try:
+                ssl_context.load_verify_locations(cafile=temp_ca_path)
+                logger.info("Successfully configured SSL context")
+            except ssl.SSLError as ssl_error:
+                logger.error(f"SSL context configuration failed: {ssl_error}")
+                raise
 
             client = AsyncIOMotorClient(
                 settings.mongo_uri,
