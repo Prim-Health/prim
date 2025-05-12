@@ -43,8 +43,7 @@ async def generate_onboarding_response(user_name: str, user_message: str, missin
     # Format message history for the prompt
     formatted_history = []
     for msg in message_history:
-        role = "assistant" if msg.source == "whatsapp" else "user"
-        formatted_history.append(f"{role}: {msg.text}")
+        formatted_history.append(f"{msg.sender}: {msg.text}")
 
     prompt = ONBOARDING_PROMPT.format(
         name=user_name,
@@ -158,7 +157,8 @@ async def whatsapp_webhook(request: Request):
                 await store_message(
                     user_id=user.id,
                     text=welcome_message,
-                    source="whatsapp"
+                    source="whatsapp",
+                    sender="assistant"
                 )
                 # Then send it
                 await send_whatsapp_message(webhook.From, welcome_message)
@@ -174,7 +174,8 @@ async def whatsapp_webhook(request: Request):
             await store_message(
                 user_id=user.id,
                 text=webhook.Body,
-                source="whatsapp"
+                source="whatsapp",
+                sender="user"
             )
             logging.info("Successfully stored message from %s", webhook.From)
 
@@ -222,7 +223,7 @@ async def whatsapp_webhook(request: Request):
                         message_history=message_history
                     )
 
-                    await store_message(user_id=user.id, text=response_text, source="whatsapp")
+                    await store_message(user_id=user.id, text=response_text, source="whatsapp", sender="assistant")
                     await send_whatsapp_message(webhook.From, response_text)
                     return {"status": "ok"}
 
@@ -236,7 +237,8 @@ async def whatsapp_webhook(request: Request):
             await store_message(
                 user_id=user.id,
                 text=response_text,
-                source="whatsapp"
+                source="whatsapp",
+                sender="assistant"
             )
             await send_whatsapp_message(webhook.From, response_text)
             logging.info("Successfully sent response to %s", webhook.From)

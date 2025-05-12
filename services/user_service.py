@@ -17,11 +17,45 @@ def clean_phone_number(phone: str) -> str:
     return phone.replace("whatsapp:", "")
 
 
+def normalize_phone_number(phone: str) -> str:
+    """
+    Normalize phone number by removing all non-digit characters and handling country code.
+    Args:
+        phone: Phone number string in any format (e.g. "+1-234-567-8900", "12345678900", "2345678900")
+    Returns:
+        Normalized 10-digit phone number
+    """
+    # Remove all non-digit characters
+    digits = ''.join(filter(str.isdigit, phone))
+
+    # Handle country code (1 for US)
+    if len(digits) == 11 and digits.startswith('1'):
+        return digits[1:]
+    return digits
+
+
 async def get_user_by_phone(phone: str) -> Optional[User]:
-    clean_phone = clean_phone_number(phone)
-    user_data = await users_collection.find_one({"phone": clean_phone})
-    if user_data:
-        return User(**user_data)
+    """
+    Get user by phone number, handling various phone number formats.
+    Args:
+        phone: Phone number string in any format
+    Returns:
+        User object if found, None otherwise
+    """
+    normalized_phone = normalize_phone_number(phone)
+
+    # Get all users and compare normalized phone numbers
+    async for user_data in users_collection.find({}):
+        # Normalize stored phone numbers
+        stored_phone = normalize_phone_number(user_data.get('phone', ''))
+        stored_call_phone = normalize_phone_number(
+            user_data.get('call_phone', ''))
+
+        # Check if either normalized phone matches
+        if stored_phone == normalized_phone or stored_call_phone == normalized_phone:
+            return User(**user_data)
+
+    logging.warning(f"User not found for phone: {phone}")
     return None
 
 
