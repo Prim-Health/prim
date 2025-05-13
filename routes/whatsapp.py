@@ -8,6 +8,8 @@ from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
 import re
 from openai import AsyncOpenAI
+import phonenumbers
+from email_validator import validate_email, EmailNotValidError
 
 router = APIRouter()
 settings = get_settings()
@@ -68,13 +70,46 @@ def is_valid_email(email: str) -> bool:
     return bool(re.match(pattern, email))
 
 
-def is_valid_phone(phone: str) -> bool:
-    # Remove any non-digit characters and +1 prefix if present
-    digits = re.sub(r'\D', '', phone)
-    if digits.startswith('1'):
-        digits = digits[1:]  # Remove the 1 prefix
-    # Check if it's a valid length (10 digits for US numbers)
-    return len(digits) == 10
+def extract_phone_number(text: str) -> str | None:
+    try:
+        # First try direct parsing
+        parsed_number = phonenumbers.parse(text, "US")
+        if phonenumbers.is_valid_number(parsed_number):
+            return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+
+        # If direct parsing fails, try finding in text
+        matches = phonenumbers.PhoneNumberMatcher(text, "US")
+        for match in matches:
+            number = match.raw_string
+            parsed_number = phonenumbers.parse(number, "US")
+            if phonenumbers.is_valid_number(parsed_number):
+                return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+        return None
+    except phonenumbers.NumberParseException as e:
+        logging.error(f"Failed to parse phone number: {e}")
+        return None
+
+
+def extract_email(text: str) -> str | None:
+    try:
+        # Use email-validator's built-in email finding
+        validation = validate_email(text, check_deliverability=False)
+        return validation.normalized
+    except EmailNotValidError:
+        # If direct validation fails, try finding email in text
+        try:
+            # Split text by common delimiters and try each part
+            parts = re.split(r'[\s,;]+', text)
+            for part in parts:
+                try:
+                    validation = validate_email(
+                        part, check_deliverability=False)
+                    return validation.normalized
+                except EmailNotValidError:
+                    continue
+        except Exception as e:
+            logging.error(f"Error extracting email: {e}")
+        return None
 
 
 @router.post("/whatsapp-webhook")
@@ -149,20 +184,8 @@ async def whatsapp_webhook(request: Request):
             if not user.email or not user.call_phone:
                 # Try to extract email and phone from the message
                 message_text = webhook.Body.lower()
-                email = None
-                call_phone = None
-
-                # Look for email pattern
-                email_match = re.search(
-                    r'[\w\.-]+@[\w\.-]+\.\w+', message_text)
-                if email_match and is_valid_email(email_match.group()):
-                    email = email_match.group()
-
-                # Look for phone number pattern
-                phone_match = re.search(
-                    r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', message_text)
-                if phone_match and is_valid_phone(phone_match.group()):
-                    call_phone = phone_match.group()
+                email = extract_email(message_text)
+                call_phone = extract_phone_number(message_text)
 
                 # Update user if we found either email or phone
                 if email or call_phone:
