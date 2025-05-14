@@ -71,13 +71,11 @@ def is_valid_email(email: str) -> bool:
 
 
 def extract_phone_number(text: str) -> str | None:
+    """
+    Extract a valid phone number from text using PhoneNumberMatcher.
+    Returns the number in E.164 format if found, None otherwise.
+    """
     try:
-        # First try direct parsing
-        parsed_number = phonenumbers.parse(text, "US")
-        if phonenumbers.is_valid_number(parsed_number):
-            return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-
-        # If direct parsing fails, try finding in text
         matches = phonenumbers.PhoneNumberMatcher(text, "US")
         for match in matches:
             number = match.raw_string
@@ -86,7 +84,7 @@ def extract_phone_number(text: str) -> str | None:
                 return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
         return None
     except phonenumbers.NumberParseException as e:
-        logging.error(f"Failed to parse phone number: {e}")
+        logging.error("Error parsing phone number: %s", e)
         return None
 
 
@@ -190,12 +188,14 @@ async def whatsapp_webhook(request: Request):
                 # Update user if we found either email or phone
                 if email or call_phone:
                     update_data = {}
-                    if email and not user.email:
+                    data_updated = False
+                    if email:
                         update_data['email'] = email
-                    if call_phone and not user.call_phone:
+                        data_updated = True
+                    if call_phone:
                         update_data['call_phone'] = call_phone
-
-                    if update_data:
+                        data_updated = True
+                    if data_updated:
                         await update_user(user.id, update_data)
                         # Refresh user data
                         user = await get_user_by_phone(webhook.From)
