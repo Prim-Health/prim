@@ -19,7 +19,7 @@ async def make_call(
     Returns the call ID.
     """
 
-    logging.info("Making VAPI call from %s", settings.twilio_whatsapp_number,)
+    logging.info("Making VAPI call to %s", to_phone)
 
     try:
         async with httpx.AsyncClient() as client:
@@ -31,7 +31,7 @@ async def make_call(
                     "customer": {
                         "number": to_phone,
                     },
-                    "phoneNumberId": "83306635-cda5-41a3-81ff-f2878dd884ae",
+                    "phoneNumberId": "83306635-cda5-41a3-81ff-f2878dd884ae",  # Prim prod number
                     "assistant": {
                         "model": {
                             "provider": "openai",

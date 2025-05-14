@@ -123,54 +123,6 @@ async def vapi_webhook(request: Request):
         # Store final transcript and summary
         transcript = webhook_data.get("message", {}).get("transcript")
         if transcript:
-            # # Check if this was a doctor call about scheduling
-            # try:
-            #     client = AsyncOpenAI(api_key=settings.openai_api_key)
-            #     response = await client.chat.completions.create(
-            #         model="gpt-4.1",
-            #         messages=[
-            #             {"role": "system", "content": "You are an AI that analyzes healthcare conversations. Determine if this was a conversation between an assistant and a doctor about scheduling a patient appointment. Not a discussion between the AI and the patient. Respond with 'yes' or 'no' only."},
-            #             {"role": "user", "content": transcript}
-            #         ]
-            #     )
-
-            #     was_doctor_scheduling = response.choices[0].message.content.strip(
-            #     ).lower() == 'yes'
-
-            #     if was_doctor_scheduling:
-            #         logger.info("Call was with doctor about scheduling")
-            #         # Send WhatsApp message to patient about scheduling status
-
-            #         # Extract appointment details from transcript
-            #         try:
-            #             details_response = await client.chat.completions.create(
-            #                 model="gpt-4",
-            #                 messages=[
-            #                     {"role": "system",
-            #                         "content": "You are an AI that extracts appointment scheduling details from conversations. Extract the date, time, doctor name, and location if present. Return in this format: 'Date: [date], Time: [time], Doctor: [name], Location: [location]'. Use 'unknown' for missing fields."},
-            #                     {"role": "user", "content": transcript}
-            #                 ]
-            #             )
-
-            #             appt_details = details_response.choices[0].message.content.strip(
-            #             )
-
-            #             # Send more detailed WhatsApp message with appointment info
-            #             await send_whatsapp_message(
-            #                 user.phone,
-            #                 f"Hi! I just spoke with the doctor's office about your appointment. Here's what I got for you:\n\n{appt_details}\n\nI'll update you if anything changes!"
-            #             )
-            #         except (openai.APIError, httpx.HTTPError) as e:
-            #             logger.error(
-            #                 "Error extracting appointment details: %s", str(e))
-
-            #         await send_whatsapp_message(
-            #             user.phone,
-            #             "Hi! I just spoke with the doctor's office about scheduling your appointment. I'll update you as soon as I have more details!"
-            #         )
-            # except (openai.APIError, httpx.HTTPError) as e:
-            #     logger.error("Error analyzing doctor transcript: %s", str(e))
-
             # Split transcript into separate messages
             messages = transcript.split('\n')
             for message in messages:
@@ -186,33 +138,33 @@ async def vapi_webhook(request: Request):
                         user_text = message[5:].strip()
                         await store_message(user.id, user_text, "voice", "user")
 
-            # Analyze if the call was about scheduling
-            try:
-                client = AsyncOpenAI(api_key=settings.openai_api_key)
-                response = await client.chat.completions.create(
-                    model="gpt-4.1",
-                    messages=[
-                        {"role": "system", "content": "You are an AI that analyzes healthcare conversations. Determine if the conversation was about scheduling an appointment. Respond with 'yes' or 'no' only."},
-                        {"role": "user", "content": transcript}
-                    ]
-                )
+            # # Analyze if the call was about scheduling
+            # try:
+            #     client = AsyncOpenAI(api_key=settings.openai_api_key)
+            #     response = await client.chat.completions.create(
+            #         model="gpt-4.1",
+            #         messages=[
+            #             {"role": "system", "content": "You are an AI that analyzes healthcare conversations. Determine if the conversation was about scheduling an appointment. Respond with 'yes' or 'no' only."},
+            #             {"role": "user", "content": transcript}
+            #         ]
+            #     )
 
-                is_scheduling = response.choices[0].message.content.strip(
-                ).lower() == 'yes'
+            #     is_scheduling = response.choices[0].message.content.strip(
+            #     ).lower() == 'yes'
 
-                if is_scheduling:
-                    logger.info(
-                        "Call was about scheduling, initiating doctor call")
-                    # Make call to doctor with context in background
-                    await make_call(
-                        to_phone="+19055195834",
-                        system_prompt=f"This is a scheduling request from a patient, Isaac Chang. Here is the context from their conversation: {transcript}. Do not mention any real calendar dates. Do not mention how you are going to messaging the patient back on WhatsApp.",
-                        first_message="Hello, this is Prim. I need to schedule an appointment for a patient. Are you the right person to speak to?",
-                        model="gpt-4.1"
-                    )
-            except (openai.APIError, httpx.HTTPError) as e:
-                logger.error(
-                    "Error analyzing transcript or making doctor call: %s", str(e))
+            #     if is_scheduling:
+            #         logger.info(
+            #             "Call was about scheduling, initiating doctor call")
+            #         # Make call to doctor with context in background
+            #         await make_call(
+            #             to_phone="+19055195834",
+            #             system_prompt=f"This is a scheduling request from a patient, Isaac Chang. Here is the context from their conversation: {transcript}. Do not mention any real calendar dates. Do not mention how you are going to messaging the patient back on WhatsApp.",
+            #             first_message="Hello, this is Prim. I need to schedule an appointment for a patient. Are you the right person to speak to?",
+            #             model="gpt-4.1"
+            #         )
+            # except (openai.APIError, httpx.HTTPError) as e:
+            #     logger.error(
+            #         "Error analyzing transcript or making doctor call: %s", str(e))
 
         return {"status": "ok"}
 
@@ -221,7 +173,7 @@ async def vapi_webhook(request: Request):
         first_message = "Hey there! It's Prim! How's everything going? Anything I can help you with?"
         if user and user.name:
             first_name = user.name.split()[0]  # Get first name if any
-            first_message = f"Hey there Isaac! It's Prim! How's everything going? Anything I can help you with?"
+            first_message = f"Hey there {first_name}! It's Prim! How's everything going? Anything I can help you with?"
 
         return {
             "assistant": {
@@ -232,7 +184,7 @@ async def vapi_webhook(request: Request):
                     "messages": [
                         {
                             "role": "system",
-                            "content": PRIM_HEALTHCARE_ASSISTANT_VOICE
+                            "content": "You are Prim, a friendly AI assistant currently in closed beta testing! Keep your tone warm, bubbly and enthusiastic. Explain that while you're super excited to help, you're not quite ready yet since you're still in testing. Thank them for their interest and let them know you'll reach out once you're fully launched! Keep responses brief but friendly."
                         }
                     ]
                 },
@@ -248,5 +200,5 @@ async def vapi_webhook(request: Request):
         }
 
     # Log unhandled message types as warnings but return success
-    logger.warning(f"Received unhandled message type: {message_type}")
+    logger.warning("Received unhandled message type: %s", message_type)
     return {"status": "ok"}
