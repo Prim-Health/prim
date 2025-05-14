@@ -2,7 +2,6 @@ import logging
 from fastapi import APIRouter, Form, HTTPException, Request
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
-from services.vapi_service import create_assistant, make_call
 from services.message_service import store_message, get_user_message_history, generate_response, generate_beta_response
 from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
@@ -10,6 +9,8 @@ import re
 from openai import AsyncOpenAI
 import phonenumbers
 from email_validator import validate_email, EmailNotValidError
+from services.vapi_service import make_call
+import httpx
 
 router = APIRouter()
 settings = get_settings()
@@ -43,8 +44,7 @@ async def generate_onboarding_response(user_name: str, user_message: str, missin
     # Format message history for the prompt
     formatted_history = []
     for msg in message_history:
-        role = "assistant" if msg.source == "whatsapp" else "user"
-        formatted_history.append(f"{role}: {msg.text}")
+        formatted_history.append(f"{msg.sender}: {msg.text}")
 
     prompt = ONBOARDING_PROMPT.format(
         name=user_name,
@@ -158,7 +158,8 @@ async def whatsapp_webhook(request: Request):
                 await store_message(
                     user_id=user.id,
                     text=welcome_message,
-                    source="whatsapp"
+                    source="whatsapp",
+                    sender="assistant"
                 )
                 # Then send it
                 await send_whatsapp_message(webhook.From, welcome_message)
@@ -174,7 +175,8 @@ async def whatsapp_webhook(request: Request):
             await store_message(
                 user_id=user.id,
                 text=webhook.Body,
-                source="whatsapp"
+                source="whatsapp",
+                sender="user"
             )
             logging.info("Successfully stored message from %s", webhook.From)
 
@@ -222,21 +224,59 @@ async def whatsapp_webhook(request: Request):
                         message_history=message_history
                     )
 
-                    await store_message(user_id=user.id, text=response_text, source="whatsapp")
+                    await store_message(user_id=user.id, text=response_text, source="whatsapp", sender="assistant")
                     await send_whatsapp_message(webhook.From, response_text)
                     return {"status": "ok"}
 
-            # TODO: beta not ready we'll reach out
-
             # If we have both email and phone, proceed with normal response generation
             message_history = await get_user_message_history(user.id)
-            response_text = await generate_beta_response(message_history)
+
+            # If user message includes the text "from YC"
+            logging.info("Received message: %s", webhook.Body)
+            logging.info("Message in lowercase: %s", webhook.Body.lower())
+            if "from yc" in webhook.Body.lower():
+                # Create system prompt for onboarding call
+                system_prompt = """You are Prim, a friendly and professional healthcare assistant conducting an onboarding call. Your goal is to gather important health information and assess their needs.
+
+Follow these steps in a natural conversation:
+1. Ask about any existing health conditions they have
+2. Inquire about how often they visit the doctor
+3. Understand which healthcare use cases they need help with
+4. Ask if they're interested in being a beta tester
+
+Keep the conversation warm and professional. Once you've gathered all the information, thank them for their time and let them know you'll be in touch soon."""
+
+                # Create first message that includes their name
+                first_message = f"Hi {user.name.split()[0] if user.name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. I understand you're from YC - that's fantastic! Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
+
+                # Make the call asynchronously without blocking
+                try:
+                    call_id = await make_call(
+                        to_phone=user.call_phone,
+                        system_prompt=system_prompt,
+                        first_message=first_message
+                    )
+                    logging.info(
+                        "Initiated YC onboarding call with ID: %s", call_id)
+                    response_text = "I'll be giving you a call shortly to learn more about your healthcare needs and how I can help! 📞"
+                except (httpx.HTTPError, httpx.RequestError) as e:
+                    logging.error(
+                        "Failed to initiate YC onboarding call: %s", str(e))
+                    response_text = "Sorry, I wasn't able to call you just now. Could you please send 'I'm from YC' again and I'll try calling you right away?"
+
+                # Send WhatsApp message once
+                await store_message(user_id=user.id, text=response_text, source="whatsapp", sender="assistant")
+                await send_whatsapp_message(webhook.From, response_text)
+                return {"status": "ok"}
+            else:
+                response_text = await generate_beta_response(message_history)
 
             # Store and send the response
             await store_message(
                 user_id=user.id,
                 text=response_text,
-                source="whatsapp"
+                source="whatsapp",
+                sender="assistant"
             )
             await send_whatsapp_message(webhook.From, response_text)
             logging.info("Successfully sent response to %s", webhook.From)

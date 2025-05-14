@@ -1,6 +1,6 @@
 import logging
 from fastapi import FastAPI
-from routes import whatsapp
+from routes import whatsapp, vapi
 from db import ensure_indexes
 
 # Configure logging
@@ -10,6 +10,7 @@ app = FastAPI(title="Prim API")
 
 # Include routers
 app.include_router(whatsapp.router, prefix="/api/v1", tags=["whatsapp"])
+app.include_router(vapi.router, prefix="/api/v1", tags=["vapi"])
 
 
 @app.on_event("startup")

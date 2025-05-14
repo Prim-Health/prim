@@ -11,12 +11,20 @@ settings = get_settings()
 client = AsyncOpenAI(api_key=settings.openai_api_key)
 
 
-async def store_message(user_id: ObjectId, text: str, source: str = "whatsapp") -> Message:
-    """Store a message in the database."""
+async def store_message(user_id: ObjectId, text: str, source: str, sender: str) -> Message:
+    """Store a message in the database.
+
+    Args:
+        user_id: The ID of the user
+        text: The message text
+        source: The source of the message ("whatsapp" or "voice")
+        sender: Who sent the message ("user" or "assistant")
+    """
     message = Message(
         user_id=user_id,
         text=text,
-        source=source
+        source=source,
+        sender=sender
     )
     result = await messages_collection.insert_one(message.model_dump(by_alias=True))
     message.id = result.inserted_id
@@ -29,7 +37,13 @@ async def get_user_messages(user_id: ObjectId, limit: int = 10) -> List[Message]
         {"user_id": user_id}
     ).sort("timestamp", -1).limit(limit)
 
-    messages = [Message(**doc) async for doc in cursor]
+    messages = []
+    async for doc in cursor:
+        # Handle legacy messages without sender field
+        if "sender" not in doc:
+            doc["sender"] = "assistant" if doc.get(
+                "source") == "whatsapp" else "user"
+        messages.append(Message(**doc))
     return list(reversed(messages))  # Return in chronological order
 
 
@@ -46,7 +60,13 @@ async def get_user_message_history(user_id: ObjectId, limit: int = 50) -> List[M
         {"user_id": user_id}
     ).sort("timestamp", -1).limit(limit)
 
-    messages = [Message(**doc) async for doc in cursor]
+    messages = []
+    async for doc in cursor:
+        # Handle legacy messages without sender field
+        if "sender" not in doc:
+            doc["sender"] = "assistant" if doc.get(
+                "source") == "whatsapp" else "user"
+        messages.append(Message(**doc))
     return messages
 
 
@@ -63,8 +83,7 @@ async def generate_response(message_history: List[Message]) -> str:
     # Sort messages by timestamp in ascending order (oldest first)
     sorted_messages = sorted(message_history, key=lambda x: x.timestamp)
     for msg in sorted_messages:
-        role = "assistant" if msg.source == "whatsapp" else "user"
-        formatted_history.append(f"{role}: {msg.text}")
+        formatted_history.append(f"{msg.sender}: {msg.text}")
 
     # Create the prompt
     prompt = "Here is the conversation history:\n\n"
@@ -98,8 +117,7 @@ async def generate_beta_response(message_history: List[Message]) -> str:
     # Sort messages by timestamp in ascending order (oldest first)
     sorted_messages = sorted(message_history, key=lambda x: x.timestamp)
     for msg in sorted_messages:
-        role = "assistant" if msg.source == "whatsapp" else "user"
-        formatted_history.append(f"{role}: {msg.text}")
+        formatted_history.append(f"{msg.sender}: {msg.text}")
 
     prompt = f"""Based on this conversation history:
 {chr(10).join(formatted_history)}
