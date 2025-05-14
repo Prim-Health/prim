@@ -2,7 +2,6 @@ import logging
 from fastapi import APIRouter, Form, HTTPException, Request
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
-from services.vapi_service import create_assistant, make_call
 from services.message_service import store_message, get_user_message_history, generate_response, generate_beta_response
 from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
@@ -10,6 +9,7 @@ import re
 from openai import AsyncOpenAI
 import phonenumbers
 from email_validator import validate_email, EmailNotValidError
+from services.vapi_service import make_call
 
 router = APIRouter()
 settings = get_settings()
@@ -227,9 +227,9 @@ async def whatsapp_webhook(request: Request):
                     await send_whatsapp_message(webhook.From, response_text)
                     return {"status": "ok"}
 
-            # TODO: beta not ready we'll reach out
+            # await make_call("+14049179922", "You are Isaac and I'm a carrot", "Hi")
 
-            # If we have both email and phone, proceed with normal response generation
+            # # If we have both email and phone, proceed with normal response generation
             message_history = await get_user_message_history(user.id)
             response_text = await generate_beta_response(message_history)
 
