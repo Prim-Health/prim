@@ -2,8 +2,9 @@ import logging
 from fastapi import APIRouter, Form, HTTPException, Request
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
-from services.vapi_service import create_assistant, make_call
+from services.vapi_service import make_call
 from services.message_service import store_message, get_user_message_history, generate_response
+from services.prompts import PRIM_ONBOARDING_CALL
 from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
 import re
@@ -18,7 +19,7 @@ ONBOARDING_FORM_ID = "mDYYWq"
 # Tally form has 3 fields:  email, phone number, and name.
 EMAIL_TYPE_KEY = "INPUT_EMAIL"
 PHONE_TYPE_KEY = "INPUT_PHONE_NUMBER"
-NAME_TYPE_KEY = "INPUT_TEXT"
+NAME_LABEL = "Name or nickname"
 
 """
 Tally request body example:
@@ -93,7 +94,7 @@ async def tally_webhook(request: Request):
             elif field["type"] == PHONE_TYPE_KEY:
                 phone = field["value"]
                 logging.info("Found phone: %s", phone)
-            elif field["type"] == NAME_TYPE_KEY:
+            elif field["label"] == NAME_LABEL:
                 name = field["value"]
                 logging.info("Found name: %s", name)
                 
@@ -119,17 +120,21 @@ async def tally_webhook(request: Request):
                 logging.info("Updating new user %s with email: %s", user.id, email)
                 await update_user(user.id, {"email": email})
             
-        # Create VAPI assistant and initiate call
+        # Initiate call
         try:
-            if not settings.vapi_api_key:
-                raise ValueError("VAPI API key is not configured")
-                
-            # Create a proper name for the assistant
-            assistant_name = f"Prim Assistant - {name or 'New User'}"
-            logging.info("Creating VAPI assistant for user %s with name: %s", user.id, assistant_name)
-            assistant = await create_assistant(assistant_name)
-            logging.info("Initiating call to %s using assistant %s", phone, assistant)
-            await make_call(assistant, phone)
+            # Create first message that includes their name
+            is_yc = name and "yc" in name.lower()
+            yc_message = "I understand you're from YC - that's fantastic! " if is_yc else ""
+            first_message = f"Hi {name.split()[0] if name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. {yc_message}Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
+
+            # Make the call
+            call_id = await make_call(
+                to_phone=phone,
+                system_prompt=PRIM_ONBOARDING_CALL,
+                first_message=first_message
+            )
+            logging.info("Initiated onboarding call with ID: %s", call_id)
+            
         except Exception as e:
             logging.error("Failed to create VAPI assistant or make call: %s", str(e))
             # Continue with the webhook response even if VAPI fails

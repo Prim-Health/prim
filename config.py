@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     mongo_auth_source: str = "admin"  # Default auth source for MongoDB Atlas
     mongo_uri_str: str = ""  # Direct MongoDB URI (for MongoDB Atlas)
 
+    # Application
+    base_url: str = "http://localhost:8000"  # Default to localhost for development
+    env: str = "development"  # Environment (development, production, etc.)
+
     @property
     def mongo_uri(self) -> str:
         if self.database_url:  # If DATABASE_URL is provided, use it
@@ -33,9 +37,6 @@ class Settings(BaseSettings):
         if self.mongo_username and self.mongo_password:
             return f"mongodb://{self.mongo_username}:{self.mongo_password}@{self.mongo_host}:{self.mongo_port}/{self.mongo_database}?authSource={self.mongo_auth_source}"
         return f"mongodb://{self.mongo_host}:{self.mongo_port}/{self.mongo_database}"
-
-    # Application
-    base_url: str = "http://localhost:8000"  # Default to localhost for development
 
     class Config:
         env_file = ".env"
