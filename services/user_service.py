@@ -59,13 +59,30 @@ async def get_user_by_phone(phone: str) -> Optional[User]:
     return None
 
 
-async def create_user(phone: str, name: Optional[str] = None) -> User:
+async def get_user_by_email(email: str) -> Optional[User]:
+    """
+    Get user by email.
+    Args:
+        email: Email address
+    Returns:
+        User object if found, None otherwise
+    """
+    user_data = await users_collection.find_one({"email": email})
+    if user_data:
+        return User(**user_data)
+    return None
+
+
+async def create_user(phone: str, name: Optional[str] = None, email: Optional[str] = None, is_yc: bool = False) -> User:
     clean_phone = clean_phone_number(phone)
 
     # Create user data dictionary explicitly
     user_data = {
         "phone": clean_phone,
+        "call_phone": clean_phone,  # Set call_phone to the same number initially
         "name": name,
+        "email": email,
+        "is_yc": is_yc,
         "vapi_assistant_id": None,
         "onboarded": False,
         "created_at": datetime.utcnow()

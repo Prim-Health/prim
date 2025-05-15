@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Form, HTTPException, Request
+from services.email_service import send_missed_call_email, send_beta_signup_email
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
 from services.vapi_service import make_call
@@ -123,39 +124,48 @@ async def tally_webhook(request: Request):
         user = await get_user_by_phone(phone)
         logging.info("User lookup result: %s", "Found" if user else "Not found")
         
+        is_yc = name and "yc" in name.lower()
+        
         if user:
             # Update existing user's name if provided
             if name:
                 logging.info("Updating existing user %s with name: %s", user.id, name)
-                await update_user(user.id, {"name": name})
+                await update_user(user.id, {"name": name, "is_yc": is_yc})
         else:
-            # Create new user with just phone and name
-            logging.info("Creating new user with phone: %s, name: %s", phone, name)
-            user = await create_user(phone, name=name)
-            # Then update with email
-            if email:
-                logging.info("Updating new user %s with email: %s", user.id, email)
-                await update_user(user.id, {"email": email})
+            # Create new user with phone, name, and email
+            logging.info("Creating new user with phone: %s, name: %s, email: %s", phone, name, email)
+            user = await create_user(phone, name=name, email=email, is_yc=is_yc)
             
-        # Initiate call
-        try:
-            # Create first message that includes their name
-            is_yc = name and "yc" in name.lower()
-            yc_message = "I understand you're from YC - that's fantastic! " if is_yc else ""
-            first_message = f"Hi {name.split()[0] if name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. {yc_message}Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
+        if is_yc:
+            # Initiate call
+            try:
+                # Create first message that includes their name
+                first_message = f"Hi {name.split()[0] if name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. I understand you're from YC - that's fantastic! Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
 
-            # Make the call
-            call_id = await make_call(
-                to_phone=phone,
-                system_prompt=PRIM_ONBOARDING_CALL,
-                first_message=first_message
-            )
-            logging.info("Initiated onboarding call with ID: %s", call_id)
-            
-        except Exception as e:
-            logging.error("Failed to create VAPI assistant or make call: %s", str(e))
-            # Continue with the webhook response even if VAPI fails
-            return {"status": "ok", "message": "User created but VAPI integration failed"}
+                # Make the call
+                call_id = await make_call(
+                    to_phone=user.call_phone,
+                    system_prompt=PRIM_ONBOARDING_CALL,
+                    first_message=first_message
+                )
+                logging.info("Initiated onboarding call with ID: %s", call_id)
+                
+            except Exception as e:
+                logging.error("Failed to initiate onboarding call: %s", str(e))
+                
+                # Send email to user
+                await send_missed_call_email(email, name)
+                # Continue with the webhook response even if VAPI fails
+                return {"status": "ok", "message": "User created but VAPI integration failed"}
+        else:
+            # Send beta signup email to non-YC users
+            try:
+                await send_beta_signup_email(email, name)
+                logging.info("Sent beta signup email to %s", email)
+            except Exception as e:
+                logging.error("Failed to send beta signup email: %s", str(e))
+                # Continue with the webhook response even if email fails
+                return {"status": "ok", "message": "User created but email failed"}
         
         logging.info("Successfully processed Tally webhook for user %s", user.id)
         return {"status": "ok", "message": "User processed successfully"}

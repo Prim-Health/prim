@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -9,6 +10,7 @@ class Settings(BaseSettings):
 
     # VAPI
     vapi_api_key: str
+    vapi_phone_id: str = "4fcc0c65-34bd-48c9-9d49-29ca3e6d9bcc" # Prim test number
 
     # OpenAI
     openai_api_key: str
@@ -23,6 +25,10 @@ class Settings(BaseSettings):
     mongo_database: str = "prim"
     mongo_auth_source: str = "admin"  # Default auth source for MongoDB Atlas
     mongo_uri_str: str = ""  # Direct MongoDB URI (for MongoDB Atlas)
+    
+    # Postmark
+    postmark_api_key: str = ""
+    email_from: str = "prim@mail.primhealth.ai"
 
     # Application
     base_url: str = "http://localhost:8000"  # Default to localhost for development

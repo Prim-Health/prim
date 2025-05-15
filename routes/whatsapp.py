@@ -196,6 +196,12 @@ async def whatsapp_webhook(request: Request):
                 # Create first message that includes their name
                 first_message = f"Hi {user.name.split()[0] if user.name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. I understand you're from YC - that's fantastic! Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
 
+                try:
+                    # Update user to indicate they're from YC
+                    await update_user(user.id, {"is_yc": True})
+                except Exception as e:
+                    logging.error("Failed to update user to indicate they're from YC: %s", str(e))
+
                 # Make the call asynchronously without blocking
                 try:
                     call_id = await make_call(

@@ -1,6 +1,6 @@
 import logging
 from fastapi import FastAPI
-from routes import whatsapp, vapi, tally
+from routes import whatsapp, vapi, tally, postmark
 from db import ensure_indexes
 
 # Configure logging
@@ -20,6 +20,7 @@ app = FastAPI(title="Prim API")
 app.include_router(whatsapp.router, prefix="/api/v1", tags=["whatsapp"])
 app.include_router(vapi.router, prefix="/api/v1", tags=["vapi"])
 app.include_router(tally.router, prefix="/api/v1", tags=["tally"])
+app.include_router(postmark.router, prefix="/api/v1", tags=["postmark"])
 
 
 @app.on_event("startup")
