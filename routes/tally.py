@@ -9,12 +9,15 @@ from config import get_settings
 from models.whatsapp import TwilioWhatsAppWebhook
 import re
 from openai import AsyncOpenAI
+from datetime import datetime, timezone
+import time
 
 router = APIRouter()
 settings = get_settings()
 client = AsyncOpenAI(api_key=settings.openai_api_key)
 
 ONBOARDING_FORM_ID = "mDYYWq"
+MAX_WEBHOOK_AGE_SECONDS = 30
 
 # Tally form has 3 fields:  email, phone number, and name.
 EMAIL_TYPE_KEY = "INPUT_EMAIL"
@@ -79,6 +82,20 @@ async def tally_webhook(request: Request):
         if data["data"]["formId"] != ONBOARDING_FORM_ID:
             logging.error("Invalid form ID: %s", data["data"]["formId"])
             raise HTTPException(status_code=400, detail="Invalid form ID")
+            
+        # Check if webhook is too old
+        created_at = data["createdAt"]
+        try:
+            webhook_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            current_time = datetime.now(timezone.utc)
+            age_seconds = (current_time - webhook_time).total_seconds()
+            
+            if age_seconds > MAX_WEBHOOK_AGE_SECONDS:
+                logging.info("Rejecting old webhook. Age: %s seconds", age_seconds)
+                return {"status": "ok", "message": "Webhook processed"}
+        except ValueError as e:
+            logging.error("Invalid timestamp format: %s", str(e))
+            raise HTTPException(status_code=400, detail="Invalid timestamp format")
             
         # Extract form fields
         fields = data["data"]["fields"]
