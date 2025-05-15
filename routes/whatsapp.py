@@ -237,15 +237,14 @@ async def whatsapp_webhook(request: Request):
             logging.info("Message in lowercase: %s", webhook.Body.lower())
             if "from yc" in webhook.Body.lower():
                 # Create system prompt for onboarding call
-                system_prompt = """You are Prim, a friendly and professional healthcare assistant conducting an onboarding call. Your goal is to gather important health information and assess their needs.
+                system_prompt = """You are Prim, a friendly and professional healthcare assistant conducting an onboarding call. Your goal is to gather important health information and assess their needs. You cannot currently help with any tasks yet, you are just learning about the user's healthcare needs so that you are ready to help them once you are out of beta testing.
 
 Follow these steps in a natural conversation:
 1. Ask about any existing health conditions they have
 2. Inquire about how often they visit the doctor
-3. Understand which healthcare use cases they need help with
-4. Ask if they're interested in being a beta tester
+3. Understand which healthcare use cases they need help with (booking appointments, dealing with insurance, etc)
 
-Keep the conversation warm and professional. Once you've gathered all the information, thank them for their time and let them know you'll be in touch soon."""
+Keep the conversation warm and professional, but answer questions in a concise manner. Once you've gathered all the information, thank them for their time and let them know you'll be in touch soon."""
 
                 # Create first message that includes their name
                 first_message = f"Hi {user.name.split()[0] if user.name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. I understand you're from YC - that's fantastic! Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
