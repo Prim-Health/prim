@@ -106,13 +106,21 @@ async def vapi_webhook(request: Request):
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are Prim, a friendly AI healthcare assistant. If the user hasn't signed up, simply direct them to visit prim health dot ai to sign up. Focus on the signup process and don't help the user with anything else. The signup process is just to go to primhealth.ai and message you on WhatsApp. There is a button on the website that says 'Message me on WhatsApp'."
+                            "content": "You are Prim, a friendly AI healthcare assistant. If the user hasn't signed up, simply direct them to visit prim health dot ai to sign up. Focus on the signup process and don't help the user with anything else. The signup process is just to go to prim health dot ai and message you on WhatsApp. There is a button on the website that says 'Message me on WhatsApp'."
                         }
                     ]
                 },
                 "voice": {
                     "provider": "vapi",
-                    "voiceId": "Lily"
+                    "voiceId": "Lily",
+                    "fallbackPlan": {
+                        "voices": [
+                            {
+                                "provider": "openai",
+                                "voiceId": "shimmer"
+                            }
+                        ]
+                    }
                 },
                 "backgroundSound": "off"
             }

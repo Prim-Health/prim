@@ -1,6 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from openai import AsyncOpenAI
+import logging
 from models.message import Message
 from db import messages_collection
 from config import get_settings
@@ -31,22 +32,6 @@ async def store_message(user_id: ObjectId, text: str, source: str, sender: str) 
     return message
 
 
-async def get_user_messages(user_id: ObjectId, limit: int = 10) -> List[Message]:
-    """Retrieve recent messages for a user."""
-    cursor = messages_collection.find(
-        {"user_id": user_id}
-    ).sort("timestamp", -1).limit(limit)
-
-    messages = []
-    async for doc in cursor:
-        # Handle legacy messages without sender field
-        if "sender" not in doc:
-            doc["sender"] = "assistant" if doc.get(
-                "source") == "whatsapp" else "user"
-        messages.append(Message(**doc))
-    return list(reversed(messages))  # Return in chronological order
-
-
 async def get_user_message_history(user_id: ObjectId, limit: int = 50) -> List[Message]:
     """
     Get a user's complete message history, ordered by timestamp.
@@ -54,11 +39,11 @@ async def get_user_message_history(user_id: ObjectId, limit: int = 50) -> List[M
         user_id: The user's ID
         limit: Maximum number of messages to return (default: 50)
     Returns:
-        List of messages ordered by timestamp (newest first)
+        List of messages ordered by timestamp (oldest first)
     """
     cursor = messages_collection.find(
         {"user_id": user_id}
-    ).sort("timestamp", -1).limit(limit)
+    ).sort("timestamp", 1).limit(limit)  # Changed to 1 for ascending order
 
     messages = []
     async for doc in cursor:
@@ -67,7 +52,7 @@ async def get_user_message_history(user_id: ObjectId, limit: int = 50) -> List[M
             doc["sender"] = "assistant" if doc.get(
                 "source") == "whatsapp" else "user"
         messages.append(Message(**doc))
-    return messages
+    return messages  # No need to reverse anymore
 
 
 async def generate_response(message_history: List[Message]) -> str:
@@ -122,7 +107,7 @@ async def generate_beta_response(message_history: List[Message]) -> str:
     prompt = f"""Based on this conversation history:
 {chr(10).join(formatted_history)}
 
-Generate a brief, friendly response (2-3 sentences) that:
+Generate a brief, upbeat response (max 1-2 sentences) that:
 1. Acknowledges the user's interest and message
 2. Explains that the beta is still under construction
 3. Mentions that you'll reach out when ready to help with their healthcare

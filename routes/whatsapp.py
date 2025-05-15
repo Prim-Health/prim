@@ -28,11 +28,12 @@ Recent conversation history:
 Missing information: {missing_info}
 
 Generate a very brief, upbeat response (max 1-2 sentences) that:
-1. Warmly acknowledges their message with genuine enthusiasm
+1. Warmly acknowledges their last message with genuine enthusiasm.
 2. Cheerfully asks for the missing information, explaining with excitement:
    - Email: to stay connected and notify them when beta testing opens up! ✨
    - Phone: so you can reach out once you're ready to welcome more users! 📱
 3. Makes them feel special and valued while being clear you're in closed beta
+4. Don't do anything healthcare assistant related, just ask for the missing information.
 
 Keep it super friendly and natural, like chatting with a caring friend, but be transparent about being in testing! 💫"""
 
