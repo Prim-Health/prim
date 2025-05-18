@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
     # VAPI
     vapi_api_key: str
     vapi_phone_id: str = "4fcc0c65-34bd-48c9-9d49-29ca3e6d9bcc" # Prim test number
+    vapi_webhook_url: str = "https://bdf1-70-53-71-114.ngrok-free.app/api/v1/vapi-webhook"
 
     # OpenAI
     openai_api_key: str
@@ -34,6 +36,9 @@ class Settings(BaseSettings):
     base_url: str = "http://localhost:8000"  # Default to localhost for development
     env: str = "development"  # Environment (development, production, etc.)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @property
     def mongo_uri(self) -> str:
         if self.database_url:  # If DATABASE_URL is provided, use it
@@ -48,6 +53,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_prefix = ""  # No prefix for environment variables
         case_sensitive = False  # Allow case-insensitive env vars
+        # Removed env_file_encoding as it's not necessary - Python 3.x uses UTF-8 by default
 
 
 def get_settings() -> Settings:

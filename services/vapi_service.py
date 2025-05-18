@@ -58,6 +58,10 @@ async def make_call(
                             "provider": "vapi",
                             "voiceId": "Lily"
                         },
+                        "voicemailDetection": {
+                            "provider": "vapi",
+                        },
+                        **({"server": {"url": settings.vapi_webhook_url}} if settings.vapi_webhook_url else {}),
                     },
                 }
             )

@@ -126,6 +126,9 @@ async def tally_webhook(request: Request):
         
         is_yc = name and "yc" in name.lower()
         
+        # Update the name as only the first part of the name (e.g. "John from YC" -> "John")
+        name = name.split()[0] if name else None
+        
         if user:
             # Update existing user's name if provided
             if name:
