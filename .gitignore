@@ -174,3 +174,4 @@ ENV/
 
 prim-venv/
 test-venv/
+.cursor

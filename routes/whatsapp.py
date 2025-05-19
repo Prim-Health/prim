@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Form, HTTPException, Request
+from services.prompts import PRIM_ONBOARDING_CALL
 from services.user_service import get_user_by_phone, create_user, update_user
 from services.whatsapp_service import send_whatsapp_message
 from services.message_service import store_message, get_user_message_history, generate_response, generate_beta_response
@@ -11,6 +12,7 @@ import phonenumbers
 from email_validator import validate_email, EmailNotValidError
 from services.vapi_service import make_call
 import httpx
+from routes.utils import is_valid_email, is_valid_phone
 
 router = APIRouter()
 settings = get_settings()
@@ -64,51 +66,6 @@ async def generate_onboarding_response(user_name: str, user_message: str, missin
     )
 
     return response.choices[0].message.content.strip()
-
-
-def is_valid_email(email: str) -> bool:
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email))
-
-
-def extract_phone_number(text: str) -> str | None:
-    """
-    Extract a valid phone number from text using PhoneNumberMatcher.
-    Returns the number in E.164 format if found, None otherwise.
-    """
-    try:
-        matches = phonenumbers.PhoneNumberMatcher(text, "US")
-        for match in matches:
-            number = match.raw_string
-            parsed_number = phonenumbers.parse(number, "US")
-            if phonenumbers.is_valid_number(parsed_number):
-                return phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-        return None
-    except phonenumbers.NumberParseException as e:
-        logging.error("Error parsing phone number: %s", e)
-        return None
-
-
-def extract_email(text: str) -> str | None:
-    try:
-        # Use email-validator's built-in email finding
-        validation = validate_email(text, check_deliverability=False)
-        return validation.normalized
-    except EmailNotValidError:
-        # If direct validation fails, try finding email in text
-        try:
-            # Split text by common delimiters and try each part
-            parts = re.split(r'[\s,;]+', text)
-            for part in parts:
-                try:
-                    validation = validate_email(
-                        part, check_deliverability=False)
-                    return validation.normalized
-                except EmailNotValidError:
-                    continue
-        except Exception as e:
-            logging.error(f"Error extracting email: {e}")
-        return None
 
 
 @router.post("/whatsapp-webhook")
@@ -236,24 +193,20 @@ async def whatsapp_webhook(request: Request):
             logging.info("Received message: %s", webhook.Body)
             logging.info("Message in lowercase: %s", webhook.Body.lower())
             if "from yc" in webhook.Body.lower():
-                # Create system prompt for onboarding call
-                system_prompt = """You are Prim, a friendly and professional healthcare assistant conducting an onboarding call. Your goal is to gather important health information and assess their needs. You cannot currently help with any tasks yet, you are just learning about the user's healthcare needs so that you are ready to help them once you are out of beta testing.
-
-Follow these steps in a natural conversation:
-1. Ask about any existing health conditions they have
-2. Inquire about how often they visit the doctor
-3. Understand which healthcare use cases they need help with (booking appointments, dealing with insurance, etc)
-
-Keep the conversation warm and professional, but answer questions in a concise manner. Once you've gathered all the information, thank them for their time and let them know you'll be in touch soon."""
-
                 # Create first message that includes their name
                 first_message = f"Hi {user.name.split()[0] if user.name else 'there'}! 👋 I'm Prim, and I'm excited to learn more about your healthcare needs and get you onboarded. I understand you're from YC - that's fantastic! Let's chat about how I can help you. Let's start with chatting about any existing health conditions you have."
+
+                try:
+                    # Update user to indicate they're from YC
+                    await update_user(user.id, {"is_yc": True})
+                except Exception as e:
+                    logging.error("Failed to update user to indicate they're from YC: %s", str(e))
 
                 # Make the call asynchronously without blocking
                 try:
                     call_id = await make_call(
                         to_phone=user.call_phone,
-                        system_prompt=system_prompt,
+                        system_prompt=PRIM_ONBOARDING_CALL,
                         first_message=first_message
                     )
                     logging.info(

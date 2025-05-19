@@ -26,6 +26,7 @@ multidict==6.4.3
 numpy==2.2.5
 openai==1.12.0
 portalocker==2.10.1
+postmarker==1.0
 propcache==0.3.1
 protobuf==5.29.4
 pydantic==2.6.1
@@ -44,6 +45,7 @@ types-PyYAML==6.0.12.20250402
 typing_extensions==4.13.2
 urllib3==1.26.20
 uvicorn==0.27.1
+vapi-server-sdk==1.4.3
 yarl==1.20.0
 phonenumbers==8.13.30
 email-validator==2.1.0.post1

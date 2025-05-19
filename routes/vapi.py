@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
+from services.email_service import send_missed_call_email
 from services.user_service import get_user_by_phone
 from services.message_service import store_message
 from services.prompts import PRIM_HEALTHCARE_ASSISTANT_VOICE
@@ -58,6 +59,9 @@ async def vapi_webhook(request: Request):
     # Get raw request body
     body = await request.body()
     webhook_data = json.loads(body)
+    
+    # Log the webhook data
+    logger.info("Received VAPI webhook data: %s", webhook_data)
 
     # Get message type first
     message_type = webhook_data.get("message", {}).get("type")
@@ -88,7 +92,8 @@ async def vapi_webhook(request: Request):
                         "provider": "vapi",
                         "voiceId": "Lily"
                     },
-                    "backgroundSound": "off"
+                    "backgroundSound": "off",
+                    **({"server": {"url": settings.vapi_webhook_url}} if settings.vapi_webhook_url else {}),
                 }
             }
     except (KeyError, AttributeError) as e:
@@ -122,12 +127,23 @@ async def vapi_webhook(request: Request):
                         ]
                     }
                 },
-                "backgroundSound": "off"
+                "backgroundSound": "off",
+                **({"server": {"url": settings.vapi_webhook_url}} if settings.vapi_webhook_url else {}),
             }
         }
 
     # Handle different message types
     if message_type == "end-of-call-report":
+        # Get ended reason
+        ended_reason = webhook_data.get("message", {}).get("endedReason")
+        # Get started at and ended at
+        started_at = webhook_data.get("message", {}).get("startedAt")
+        ended_at = webhook_data.get("message", {}).get("endedAt")
+        
+        if user.is_yc and (ended_reason and ("error" in ended_reason or "busy" in ended_reason or "customer-did-not-answer" in ended_reason)) or (not started_at and not ended_at):
+            # Send missed call email to user
+            await send_missed_call_email(user.email, user.name)
+
         # Store final transcript and summary
         transcript = webhook_data.get("message", {}).get("transcript")
         if transcript:
@@ -203,7 +219,8 @@ async def vapi_webhook(request: Request):
                 "backgroundSound": "off",
                 "startSpeakingPlan": {
                     "waitSeconds": 2.0,
-                }
+                },
+                **({"server": {"url": settings.vapi_webhook_url}} if settings.vapi_webhook_url else {}),
             }
         }
 

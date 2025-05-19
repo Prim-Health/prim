@@ -3,9 +3,12 @@ import logging
 from config import get_settings
 from typing import Optional, Dict, Any
 
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 settings = get_settings()
 VAPI_BASE_URL = "https://api.vapi.ai"
-
 
 async def make_call(
     to_phone: str,
@@ -18,8 +21,17 @@ async def make_call(
     The assistant will be created for this specific call.
     Returns the call ID.
     """
+    if not to_phone:
+        raise ValueError("Phone number is required")
 
-    logging.info("Making VAPI call to %s", to_phone)
+    # Format phone number for VAPI (ensure it has +1 prefix)
+    formatted_phone = to_phone
+    if not formatted_phone.startswith('+'):
+        formatted_phone = '+' + formatted_phone
+    if not formatted_phone.startswith('+1'):
+        formatted_phone = '+1' + formatted_phone.lstrip('+')
+
+    logging.info("Making VAPI call to %s (formatted from %s)", formatted_phone, to_phone)
 
     try:
         async with httpx.AsyncClient() as client:
@@ -29,9 +41,9 @@ async def make_call(
                 json={
                     "type": "outboundPhoneCall",
                     "customer": {
-                        "number": to_phone,
+                        "number": formatted_phone,
                     },
-                    "phoneNumberId": "83306635-cda5-41a3-81ff-f2878dd884ae",  # Prim prod number
+                    "phoneNumberId": settings.vapi_phone_id,
                     "assistant": {
                         "model": {
                             "provider": "openai",
@@ -46,6 +58,10 @@ async def make_call(
                             "provider": "vapi",
                             "voiceId": "Lily"
                         },
+                        "voicemailDetection": {
+                            "provider": "vapi",
+                        },
+                        **({"server": {"url": settings.vapi_webhook_url}} if settings.vapi_webhook_url else {}),
                     },
                 }
             )

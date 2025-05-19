@@ -28,6 +28,7 @@ class User(BaseModel):
     call_phone: Optional[str] = Field(default=None, exclude=False)
     vapi_assistant_id: Optional[str] = None
     onboarded: bool = False
+    is_yc: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
